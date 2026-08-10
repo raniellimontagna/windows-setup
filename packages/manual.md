@@ -260,6 +260,7 @@ Não são esquecimento. Cada um tem um motivo.
 | `Microsoft.WSL`, `Canonical.Ubuntu.2404` | Só se a decisão for instalar WSL2 — e **o plano recomenda não instalar por padrão** (Virtual Machine Platform põe o Windows sob o hypervisor: 2-5% de FPS, e "desabilite Hyper-V/VBS/WSL" é conselho de primeira linha no troubleshooting do EA Javelin). Ambos existem no winget se a decisão mudar (`Microsoft.WSL` 2.7.11 confirmado). Fixe `Ubuntu-24.04`, nunca `Ubuntu` — é alvo móvel |
 | `wez.wezterm` | Alternativa ao `Microsoft.WindowsTerminal`. Escolha uma |
 | `M2Team.NanaZip` | Alternativa ao `7zip.7zip`. Escolha uma |
+| `EpicGames.EpicGamesLauncher`, `Blizzard.BattleNet`, `GOG.Galaxy` | Removidos em 10/ago/2026: **não são usados**. Estavam ali por completude, não por necessidade — e launcher não usado é serviço em background, entrada de autostart e mais uma superfície kernel-level para o anticheat brigar. IDs confirmados, é só recolocar a linha em `packages-gaming.json` se um dia entrar um jogo dessas lojas |
 | `Bitwarden.CLI` | ID separado do `Bitwarden.Bitwarden`. Adicione só se for usar o CLI |
 | Chocolatey | Terceiro banco de pacotes paralelo, exige admin, não cobre nada que winget já não cubra |
 | Scoop | Provavelmente desnecessário. Ganha argumento forte **só** se a decisão for não instalar WSL — aí ele resolve sozinho o conflito de elevação entre Spotify e a Nerd Font |

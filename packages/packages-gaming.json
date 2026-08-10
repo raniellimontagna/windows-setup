@@ -14,10 +14,7 @@
 
         { "PackageIdentifier": "Valve.Steam" },
         { "PackageIdentifier": "ElectronicArts.EADesktop" },
-        { "PackageIdentifier": "EpicGames.EpicGamesLauncher" },
-        { "PackageIdentifier": "Blizzard.BattleNet" },
-        { "PackageIdentifier": "Ubisoft.Connect" },
-        { "PackageIdentifier": "GOG.Galaxy" }
+        { "PackageIdentifier": "Ubisoft.Connect" }
       ]
     }
   ]
