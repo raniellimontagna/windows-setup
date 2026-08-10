@@ -173,8 +173,25 @@ A partir daqui, tudo que não sair da máquina é perdido. O Windows não lê ex
     - XMP/EXPO ON. **Resizable BAR ON + Above 4G Decoding ON** (importa na 4060 Ti).
     - CSM/Legacy **OFF**, boot **UEFI only**.
 26. ⚠️ **Secure Boot**: "Restore Factory Keys" / reset para Setup Mode e install default keys
-    (purga as chaves MOK/shim que o CachyOS deixou), **e só depois** habilite. Confirme
-    "Enabled" e "User Mode".
+    (purga as chaves MOK/shim que o CachyOS deixou). **Faça a restauração das chaves agora, mas
+    deixe o Secure Boot DESLIGADO até o Windows estar instalado** — ver a ressalva do Ventoy
+    logo abaixo. Habilite no passo 33, e só então confirme "Enabled" e "User Mode".
+
+    > **Se a mídia for Ventoy, não ligue o Secure Boot antes de instalar.**
+    > O Ventoy assina o próprio bootloader com uma CA própria (nova desde a v1.1.14) e, com
+    > Secure Boot ligado, o primeiro boot cai no MOK manager pedindo enrollment da chave dele.
+    > Enrollar essa chave **recoloca um certificado de terceiro exatamente no keystore que você
+    > acabou de limpar** — numa máquina cujo motivo de existir é passar num anticheat kernel.
+    > A documentação do próprio Ventoy ainda avisa que ele **contorna as checagens de Secure Boot
+    > por padrão**, e que em algumas placas a solução simplesmente não funciona.
+    >
+    > Não precisa: o requisito da Microsoft é **"UEFI, Secure Boot capable"** — *capaz*, não
+    > *ligado*. O Setup instala com Secure Boot desligado sem reclamar e sem bypass nenhum.
+    > O que precisa estar ligado é o **TPM 2.0**, esse sim desde já.
+    >
+    > Alternativa, se preferir instalar já com Secure Boot ligado: grave um pendrive **comum**
+    > só com o Windows (o bootloader dele é assinado pela Microsoft, boota com as chaves de
+    > fábrica, zero enrollment) e mantenha o Ventoy como caixa de ferramentas multi-ISO.
     - ⚠️ Restaurar chaves de fábrica numa placa desenhada antes de 2023 reinstala só os CAs de
       2011 e descarta certificados de 2023 que o Windows tenha instalado. Reconfira depois do
       boot em Windows Security > Device security > Secure boot certificate status.
@@ -214,6 +231,15 @@ junto. Isto não é cinto e suspensório — é o item nº 1 de risco de perda d
 ## Depois do primeiro boot
 
 Nada aqui é responsabilidade do `unattend/`, mas vale anotar o gancho:
+
+33. ⚠️ **Volte na BIOS e ligue o Secure Boot** (o passo 26 deixou as chaves de fábrica restauradas
+    e o Secure Boot desligado só para o boot da mídia). Confirme "Enabled" + "User Mode".
+    Sem isso o EA FC não roda — e este é o passo mais fácil de esquecer, porque a máquina já está
+    funcionando e parece pronta.
+    - ⚠️ Ligar o Secure Boot é justamente um dos gatilhos que faz uma máquina que **não**
+      qualificava para device encryption passar a qualificar. Confirme que o
+      `PreventDeviceEncryption` está valendo **antes** de ligar.
+    - Retire o pendrive antes, para não cair no MOK manager do Ventoy sem querer.
 
 - ⚠️ **Memory Integrity (HVCI) vem LIGADO por padrão** numa clean install deste hardware. Não é
   "deixe desligado", é **desligue ativamente** — e antes que a auto-encryption complete.
