@@ -1,0 +1,25 @@
+# Segredos e coisas específicas da máquina — nunca commitar.
+# Mesma regra do mac-setup: segredo mora fora do repo.
+*.local.ps1
+*.local.json
+secrets.ps1
+
+# autounattend.xml final é GERADO pelo build-usb.sh a partir do template
+# (o template tem placeholder; o gerado tem a senha da conta local em texto claro).
+unattend/autounattend.xml
+
+# Mídia e artefatos grandes
+*.iso
+*.wim
+*.esd
+*.msixbundle
+*.zip
+
+# Inventário exportado da máquina antiga (pode conter nomes de apps de trabalho)
+packages-snapshot.json
+installed-full.txt
+
+# Windows
+Thumbs.db
+desktop.ini
+.DS_Store

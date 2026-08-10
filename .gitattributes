@@ -1,0 +1,23 @@
+# Line endings — PRECISA ser o primeiro commit do repo.
+# Um .sh com CRLF morre dentro do WSL com `$'\r': command not found`,
+# e o erro não diz nada sobre line ending. Um .ps1/.xml com LF pode
+# quebrar em ferramentas antigas do Windows.
+
+* text=auto
+
+*.sh   text eol=lf
+*.bash text eol=lf
+*.conf text eol=lf
+user-data text eol=lf
+
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+*.xml  text eol=crlf
+*.reg  text eol=crlf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.iso binary
