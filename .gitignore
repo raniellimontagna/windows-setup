@@ -4,9 +4,25 @@
 *.local.json
 secrets.ps1
 
-# autounattend.xml final é GERADO pelo build-usb.sh a partir do template
-# (o template tem placeholder; o gerado tem a senha da conta local em texto claro).
+# Defesa em profundidade para o arquivo de senha da conta local. O install-to-ventoy.sh já
+# RECUSA um arquivo de senha que esteja dentro do repo — isto aqui é a segunda camada, para o
+# caso de alguém criar o arquivo e nunca chegar a rodar o script.
+*password*
+*.secret
+
+# autounattend.xml final é GERADO a partir do template (o template tem placeholder; o gerado
+# tem a senha da conta local em texto claro). O install-to-ventoy.sh nem chega a escrever no
+# repo — ele gera num diretório temporário e copia direto para o pendrive — mas o build-usb.sh
+# escreve aqui, e um `--inject` distraído também escreveria. Ignorar é barato.
 unattend/autounattend.xml
+unattend/*.generated.xml
+ventoy/autounattend.xml
+
+# Backups do ventoy.json trazidos do pendrive para inspeção. O install-to-ventoy.sh cria esses
+# .bak DENTRO do pendrive, não aqui — mas copiar um para o repo ao depurar é natural, e eles
+# podem carregar configuração de plugin que não interessa versionar.
+ventoy/*.bak
+ventoy/ventoy.json.bak-*
 
 # Mídia e artefatos grandes
 *.iso

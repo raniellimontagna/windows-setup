@@ -86,10 +86,20 @@ case. Vários não são o óbvio: `BurntSushi.ripgrep.MSVC`, `dandavison.delta`,
 ### `unattend/`
 
 A camada pré-instalação — a de maior risco. Answer file com locale pt-BR, teclado ABNT2, layout GPT,
-conta local e `PreventDeviceEncryption`, mais o script que grava o pendrive.
-**`build-usb.sh` roda no Linux, não no macOS** (Rufus é Windows-only e o Ventoy não tem build para
-macOS). O `autounattend.xml` final é *gerado* e está no `.gitignore` — o que se versiona é o template
-com placeholder.
+conta local e `PreventDeviceEncryption`.
+
+O caminho ativo é **`install-to-ventoy.sh`**, que **roda no macOS e no Linux**: o pendrive já é um
+Ventoy e o answer file chega ao Setup pelo plugin **`auto_install`** (`ventoy/ventoy.json`), não
+pela raiz da mídia. O script só copia dois arquivos de texto — não formata nada, não escreve em
+block device.
+
+O `build-usb.sh` continua no repo como **alternativa**: monta um pendrive comum, dedicado, apagando
+o dispositivo. Roda só no Linux. Serve para instalar com Secure Boot já ligado (o bootloader do
+Windows é assinado pela Microsoft; o do Ventoy usa CA própria e pediria enrollment de MOK), ou como
+plano B se o Ventoy não bootar nesta placa.
+
+O `autounattend.xml` final é *gerado* e está no `.gitignore` — o que se versiona é o template com
+placeholder.
 
 ### `profile/`, `wsl/`, `vscode/`
 
@@ -132,8 +142,12 @@ Ubuntu e reusa a metade que é Linux-safe. **Não existe um terceiro repo de dot
 - **Segredo nenhum no repo.** `~/.secrets.ps1` (Windows) e `~/.secrets.zsh` (WSL), ambos fora daqui,
   carregados por dot-source se existirem. Nenhum dos dois é criado pela automação — recrie à mão.
 - **A senha da conta local não se versiona.** O `autounattend.template.xml` tem placeholder; o
-  `build-usb.sh` injeta a senha de um arquivo fora do repo e **recusa** um arquivo de senha que
-  esteja dentro dele. O XML gerado está no `.gitignore`.
+  `install-to-ventoy.sh` (e o `build-usb.sh`) injetam a senha de um arquivo fora do repo e
+  **recusam** um arquivo de senha que esteja dentro dele. O XML gerado está no `.gitignore` e
+  nunca chega a ser escrito dentro do repo.
+- **O pendrive vira segredo físico** depois de rodar o script: o answer file fica em
+  `/ventoy/script/autounattend.xml` com a senha em texto claro, e exFAT não tem permissão de
+  arquivo.
 - **A senha vaza no `C:\Windows\Panther\`** durante a instalação, em texto claro. O answer file
   manda apagar as cópias, mas troque a senha depois do primeiro boot mesmo assim.
 - **Não use `irm <url> | iex` com este repo.** Fixe uma tag ou SHA revisado
@@ -150,8 +164,9 @@ Trate a primeira execução como teste, não como rotina. Duas coisas ajudam:
 
 1. O `bootstrap.ps1` clona de uma URL que **só resolve depois que este repo for publicado**. Publique
    antes de apagar o CachyOS, ou passe `-RepoUrl`/copie o repo à mão.
-2. O `unattend/iso.sha256` ainda está com o placeholder de zeros e o `build-usb.sh` se recusa a rodar
-   até ele ser preenchido com o hash do ISO pt-BR. Isso é proposital.
+2. O `unattend/iso.sha256` **já está preenchido** (10/ago/2026) com o hash oficial de
+   Português (Brasil), e o ISO no pendrive foi conferido contra ele. Os scripts validam o ISO
+   antes de escrever qualquer coisa.
 
 Teste o `autounattend.xml` numa VM antes do wipe. XML malformado dá loop de reboot, e descobrir isso
 sem sistema operacional e sem backup é o pior cenário possível.

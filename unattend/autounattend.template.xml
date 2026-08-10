@@ -3,20 +3,32 @@
   autounattend.template.xml — answer file do Windows 11 25H2 x64 (ISO em Português do Brasil).
 
   Uso:  NÃO use este arquivo direto. Ele contém o placeholder @@LOCAL_ACCOUNT_PASSWORD@@.
-        Gere o arquivo final com  unattend/build-usb.sh  (roda no Linux/CachyOS, nunca no macOS),
-        que lê a senha de um arquivo FORA do repo e grava o autounattend.xml na raiz da mídia.
+        CAMINHO ATIVO — pendrive Ventoy, roda no macOS ou no Linux:
+            bash unattend/install-to-ventoy.sh  (opção password-file; ver unattend/README.md)
+        [Comentário XML não aceita hífen duplo, por isso a opção acima está sem os hifens.]
+        Ele lê a senha de um arquivo FORA do repo, escapa os caracteres especiais de XML,
+        valida o resultado e publica em /ventoy/script/autounattend.xml no pendrive.
+        ALTERNATIVA — pendrive comum, só no Linux:  unattend/build-usb.sh  (ver unattend/README.md).
 
-  Idempotente no sentido que importa aqui: o template é puro dado, e o build-usb.sh sempre
-  regenera o autounattend.xml do zero. Rodar de novo produz exatamente o mesmo resultado.
+  Idempotente no sentido que importa aqui: o template é puro dado, e os scripts sempre regeneram
+  o autounattend.xml do zero. Rodar de novo produz exatamente o mesmo resultado.
 
   DESTRUTIVO: este answer file tem WillWipeDisk=true no Disk 0. Ele APAGA o disco inteiro,
   sem perguntar nada. Só use depois de conferir os backups (README, Fase 1) e de desconectar
   fisicamente os drives secundários (README, Fase 6).
 
-  Ordem de busca do Setup: o autounattend.xml tem que estar na RAIZ da mídia de instalação.
-  Se você gravar o pendrive com o Rufus e deixar qualquer checkbox da tela WUE marcado, o Rufus
-  injeta um answer file PRÓPRIO que vence a ordem de busca, e este arquivo é ignorado SEM erro
-  nenhum. Ou o Rufus é o dono da customização, ou este arquivo é. Nunca os dois.
+  Onde este arquivo precisa estar, e isso DEPENDE do caminho:
+    - Ventoy (ativo): em /ventoy/script/ no pendrive, apontado pelo plugin auto_install do
+      ventoy/ventoy.json. Na RAIZ do pendrive ele seria simplesmente ignorado — quem boota o
+      ISO ali é o Ventoy, não a mídia da Microsoft.
+    - Pendrive comum (alternativa): na RAIZ da mídia, que é onde o Setup procura.
+
+  Quem é o dono da customização, em qualquer um dos dois casos, tem que ser UM só:
+    - Rufus: se qualquer checkbox da tela WUE ficar marcado, ele injeta um answer file PRÓPRIO
+      que vence a ordem de busca e este arquivo é ignorado SEM erro nenhum.
+    - Ventoy: desde a v1.0.86 ele vem com VTOY_WIN11_BYPASS_CHECK e VTOY_WIN11_BYPASS_NRO
+      LIGADOS por padrão, escrevendo chaves de registro de bypass por conta própria. O
+      ventoy/ventoy.json deste repo desliga os dois. Ver unattend/README.md.
 
   Teste em VM no Proxmox ANTES do wipe (README, Fase 4). XML malformado = loop de reboot,
   e descobrir isso sem SO e sem backup é o pior cenário possível.
@@ -363,9 +375,10 @@
             <Group>Administrators</Group>
             <Password>
               <!--
-                @@LOCAL_ACCOUNT_PASSWORD@@ é substituído pelo build-usb.sh a partir de um
-                arquivo fora do repo. NUNCA commite a senha aqui: o repo é público, e o
-                autounattend.xml gerado está no .gitignore por causa disso.
+                @@LOCAL_ACCOUNT_PASSWORD@@ é substituído pelo install-to-ventoy.sh (ou pelo
+                build-usb.sh) a partir de um arquivo fora do repo, já com escape de XML.
+                NUNCA commite a senha aqui: o repo é público, e o autounattend.xml gerado
+                está no .gitignore por causa disso.
 
                 PlainText=true é intencional. A alternativa (PlainText=false com base64 de
                 UTF-16LE) é ofuscação, não criptografia: quem tem o arquivo tem a senha do

@@ -1,7 +1,29 @@
 #!/usr/bin/env bash
 #
-# build-usb.sh — gera o autounattend.xml (senha vinda de fora do repo) e grava a mídia
-#                de instalação do Windows 11 25H2 num pendrive.
+# ┌──────────────────────────────────────────────────────────────────────────────────────────┐
+# │  ⚠️  ESTE NÃO É O CAMINHO ATIVO.                                                          │
+# │                                                                                          │
+# │  O caminho ativo é o `install-to-ventoy.sh`, neste mesmo diretório: o pendrive já é um    │
+# │  Ventoy com 13 ISOs, e o answer file é entregue pelo plugin auto_install, sem formatar    │
+# │  nada. Um pendrive só. Comece por lá — e pelo `README.md`.                                │
+# │                                                                                          │
+# │  Este script é a ALTERNATIVA DE PENDRIVE COMUM: ele apaga um dispositivo inteiro e        │
+# │  constrói uma mídia dedicada só do Windows, com o autounattend.xml na raiz (a ordem de    │
+# │  busca clássica do Setup). Ele continua aqui porque essa alternativa tem um uso real e    │
+# │  específico, documentado na Fase 5 do README:                                             │
+# │                                                                                          │
+# │    - instalar com Secure Boot JÁ LIGADO. O bootloader do Windows é assinado pela          │
+# │      Microsoft e boota com as chaves de fábrica; o do Ventoy usa CA própria e cairia no   │
+# │      MOK manager pedindo enrollment — justamente no keystore que a Fase 5 acabou de       │
+# │      limpar, numa máquina cujo motivo de existir é passar num anticheat kernel.           │
+# │    - ou como plano B, se o Ventoy falhar na placa (a documentação dele admite que em      │
+# │      algumas placas a solução simplesmente não funciona).                                 │
+# │                                                                                          │
+# │  Se você está seguindo o fluxo normal, NÃO rode este arquivo.                             │
+# └──────────────────────────────────────────────────────────────────────────────────────────┘
+#
+# build-usb.sh — gera o autounattend.xml (senha vinda de fora do repo) e grava uma mídia
+#                de instalação COMUM (não-Ventoy) do Windows 11 25H2 num pendrive.
 #
 # Uso:  sudo bash build-usb.sh --iso <arquivo.iso> --device /dev/sdX --password-file <arquivo>
 #       bash build-usb.sh --inject <dir-ou-mountpoint> --password-file <arquivo>
@@ -30,25 +52,39 @@ warn(){ printf "\033[1;33m⚠\033[0m %s\n" "$1"; }
 die(){  printf "\n\033[1;31m✖ ERRO:\033[0m %s\n\n" "$1" >&2; exit 1; }
 
 # --- 1. Recusa de plataforma ---
-# Este script existe justamente porque a mídia NÃO pode ser feita no Mac:
+# Esta recusa vale só para ESTE script (o caminho do pendrive comum), e não para o repo.
+# Construir uma mídia COMUM do zero exige Linux:
 #   - Rufus é Windows-only.
-#   - Ventoy não tem build para macOS.
+#   - O instalador do Ventoy não tem build para macOS (só Windows e Linux) — mas isso é
+#     irrelevante aqui, porque no fluxo ativo o pendrive JÁ ESTÁ com o Ventoy instalado.
 #   - O install.wim do ISO 25H2 passa de 4 GB, então um "dd do ISO" ou um pendrive FAT32
 #     simples feito no Finder/Disk Utility não serve.
 # A solução aqui é Linux puro: GPT + FAT32 + wimlib para dividir o install.wim em .swm,
 # que é um formato que o Setup do Windows lê nativamente. Sem UEFI:NTFS, sem shim, sem Ventoy.
+#
+# ⚠️ NÃO conclua daqui que "não dá para preparar a mídia no Mac". Dá, e é o caminho ativo:
+#    o `install-to-ventoy.sh` roda no macOS e só copia arquivos para a partição exFAT do
+#    Ventoy já montada. Nada de formatar, nada de wimlib, nada de dividir .wim — o Ventoy
+#    boota o ISO direto do arquivo, então o teto de 4 GB do FAT32 nem entra na conversa.
 if [ "$(uname -s)" = "Darwin" ]; then
   cat >&2 <<'EOF'
 
 ✖ ERRO: este script não roda no macOS, e isso não é um descuido.
 
-  A mídia de instalação do Windows 11 25H2 não pode ser construída num Mac:
+  ➜ Você provavelmente queria o caminho ATIVO, que roda no Mac sem problema nenhum:
+
+        bash unattend/install-to-ventoy.sh --password-file "$HOME/.windows-setup-password"
+
+    Ele entrega o answer file pelo plugin auto_install do Ventoy, no pendrive que você já
+    tem. Não formata nada. Leia o unattend/README.md.
+
+  Este script aqui é a ALTERNATIVA de pendrive COMUM (sem Ventoy), e essa sim precisa de
+  Linux para ser construída:
     - Rufus é Windows-only.
-    - Ventoy não tem build para macOS.
     - O install.wim do ISO passa de 4 GB e não cabe num FAT32 sem ser dividido;
       dividir exige wimlib, que aqui é usado via wimlib-imagex.
 
-  O que fazer em vez disso:
+  Se você realmente quer a mídia comum (ex.: instalar com Secure Boot já ligado):
     (a) Rode este script no CachyOS, ENQUANTO ELE AINDA BOOTA. Depois do wipe não dá mais.
     (b) Ou numa VM Linux no Proxmox, com o pendrive repassado por USB passthrough.
 
@@ -137,8 +173,10 @@ esac
 PW_PERMS="$(stat -c '%a' "$PW_FILE_ABS")"
 [ "$PW_PERMS" = "600" ] || warn "Permissão do arquivo de senha é $PW_PERMS. O ideal é 600 (chmod 600 '$PW_FILE_ABS')."
 
-# read -r lê só a primeira linha e já descarta o \n final.
-IFS= read -r LOCAL_PASSWORD < "$PW_FILE_ABS" || true
+# read -r lê só a primeira linha e já descarta o \n final. O `tr -d '\r'` cuida do caso de um
+# arquivo de senha salvo com CRLF: o \r invisível entraria na senha da conta e o resultado é
+# não conseguir logar na máquina recém-formatada, com a senha "certa" na mão.
+LOCAL_PASSWORD="$(head -n1 "$PW_FILE_ABS" | tr -d '\r')"
 [ -n "${LOCAL_PASSWORD:-}" ] || die "O arquivo de senha está vazio: $PW_FILE_ABS"
 ok "Senha lida de $PW_FILE_ABS (${#LOCAL_PASSWORD} caracteres, não será impressa)."
 
