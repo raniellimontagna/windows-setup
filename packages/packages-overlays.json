@@ -12,7 +12,8 @@
       "Packages": [
         { "PackageIdentifier": "REALiX.HWiNFO" },
         { "PackageIdentifier": "Guru3D.RTSS" },
-        { "PackageIdentifier": "Guru3D.Afterburner" }
+        { "PackageIdentifier": "Guru3D.Afterburner" },
+        { "PackageIdentifier": "OBSProject.OBSStudio" }
       ]
     }
   ]

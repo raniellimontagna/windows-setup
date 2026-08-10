@@ -535,7 +535,7 @@ else {
   # A falha típica do Javelin em instalação limpa não é Secure Boot — é conflito com
   # software kernel-level/overlay, e depurar isso com três deles já instalados é ruim.
   Write-Host ''
-  warn 'Overlays (HWiNFO/RTSS/Afterburner) NÃO foram instalados — de propósito.'
+  warn 'Overlays (HWiNFO/RTSS/Afterburner/OBS) NÃO foram instalados — de propósito.'
   Write-Host '  Abra o EA FC, entre numa partida e confirme que o anticheat passa.'
   Write-Host '  Só depois disso, e num terminal comum:'
   Write-Host ''

@@ -137,6 +137,7 @@ Ver seção 5.
 | `REALiX.HWiNFO` | Junto com RTSS/Afterburner ocupa o slot do `stats` do Mac. Vive em `packages-overlays.json` |
 | `Guru3D.RTSS` | ⚠️ **Instale e valide o EA FC ANTES disto.** A falha típica do Javelin em instalação limpa não é Secure Boot — é conflito com outro software kernel-level/overlay. (Produtos conflitantes específicos: *nao verificado*) |
 | `Guru3D.Afterburner` | ⚠️ Mesma ressalva do RTSS. Empilhar overlay antes de validar o anticheat é como se perde uma noite |
+| `OBSProject.OBSStudio` | ⚠️ Mesma ressalva, e o motivo surpreende: o **Game Capture** do OBS injeta um graphics hook no processo do jogo — mesma classe do RTSS, não é "só um gravador". **Display Capture e Window Capture não injetam nada** e são o fallback quando o anticheat implica. Manifest confirmado (versões até 32.2.1) |
 
 ### Por que os overlays têm arquivo próprio
 
