@@ -5,7 +5,7 @@
     ],
     "auto_install": [
         {
-            "image": "/Win11_25H2_BrazilianPortuguese_x64_v2.iso",
+            "image": "/Windows 11 25H2 pt-BR OFICIAL.iso",
             "template": "/ventoy/script/autounattend.xml",
             "autosel": 1
         }

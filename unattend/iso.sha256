@@ -24,5 +24,8 @@
 # outubro de 2026, ou seja, depois desta instalação.
 
 # Preenchido em 10/ago/2026, da tabela oficial (linha "Português (Brasil) 64-bit").
-# Nome de arquivo como a Microsoft entrega hoje; tamanho 8.172.068.864 bytes (7,61 GiB).
-50fe4703cf0df0072e093d1f5d58ed450e4c49d8ca960433bbe6278d5ef10107  Win11_25H2_BrazilianPortuguese_x64_v2.iso
+# Tamanho 8.172.068.864 bytes (7,61 GiB). Nome original da Microsoft:
+# Win11_25H2_BrazilianPortuguese_x64_v2.iso — renomeado no pendrive para o nome abaixo,
+# porque o menu do Ventoy mistura 14 ISOs e "qual desses é o oficial" tem que ser óbvio
+# na hora de escolher. O hash é o que identifica a mídia; o nome é só para humano.
+50fe4703cf0df0072e093d1f5d58ed450e4c49d8ca960433bbe6278d5ef10107  Windows 11 25H2 pt-BR OFICIAL.iso
