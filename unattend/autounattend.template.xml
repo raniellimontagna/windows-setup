@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  autounattend.template.xml — answer file do Windows 11 25H2 x64 (ISO em Português do Brasil).
+
+  Uso:  NÃO use este arquivo direto. Ele contém o placeholder @@LOCAL_ACCOUNT_PASSWORD@@.
+        Gere o arquivo final com  unattend/build-usb.sh  (roda no Linux/CachyOS, nunca no macOS),
+        que lê a senha de um arquivo FORA do repo e grava o autounattend.xml na raiz da mídia.
+
+  Idempotente no sentido que importa aqui: o template é puro dado, e o build-usb.sh sempre
+  regenera o autounattend.xml do zero. Rodar de novo produz exatamente o mesmo resultado.
+
+  DESTRUTIVO: este answer file tem WillWipeDisk=true no Disk 0. Ele APAGA o disco inteiro,
+  sem perguntar nada. Só use depois de conferir os backups (README, Fase 1) e de desconectar
+  fisicamente os drives secundários (README, Fase 6).
+
+  Ordem de busca do Setup: o autounattend.xml tem que estar na RAIZ da mídia de instalação.
+  Se você gravar o pendrive com o Rufus e deixar qualquer checkbox da tela WUE marcado, o Rufus
+  injeta um answer file PRÓPRIO que vence a ordem de busca, e este arquivo é ignorado SEM erro
+  nenhum. Ou o Rufus é o dono da customização, ou este arquivo é. Nunca os dois.
+
+  Teste em VM no Proxmox ANTES do wipe (README, Fase 4). XML malformado = loop de reboot,
+  e descobrir isso sem SO e sem backup é o pior cenário possível.
+
+  O QUE ESTE ARQUIVO DELIBERADAMENTE NÃO TEM:
+  Nada de bypass de TPM, de Secure Boot ou de RAM (as chaves LabConfig BypassTPMCheck,
+  BypassSecureBootCheck e BypassRAMCheck). O hardware passa nos requisitos nativamente, então
+  o bypass não resolveria nada; o que ele faria é permitir concluir a instalação com Secure Boot
+  desligado. Secure Boot desligado quebra o anticheat do EA FC, que é o motivo inteiro desta
+  migração de volta para o Windows. A ausência dessas chaves aqui é intencional.
+-->
+<unattend xmlns="urn:schemas-microsoft-com:unattend"
+          xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <!-- ============================================================================
+       1. windowsPE — idioma do Setup, particionamento, destino da imagem, edition
+       ============================================================================ -->
+  <settings pass="windowsPE">
+
+    <component name="Microsoft-Windows-International-Core-WinPE"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <!--
+        Idioma das telas do próprio instalador. Isto NÃO converte um ISO en-US em pt-BR:
+        o ISO é multi-EDITION, não multi-LANGUAGE. Baixe o ISO em Português (Brasil).
+      -->
+      <SetupUILanguage>
+        <UILanguage>pt-BR</UILanguage>
+      </SetupUILanguage>
+      <!--
+        Teclado: 0416:00010416
+          0416     = idioma Português (Brasil)
+          00010416 = layout "Português (Brasil ABNT2)"
+        NÃO use 0416:00000416. Aquele é o ABNT puro (sem a tecla extra ao lado do Shift
+        direito) e erra justamente a tecla de "/" e "?" do teclado brasileiro real.
+      -->
+      <InputLocale>0416:00010416</InputLocale>
+      <SystemLocale>pt-BR</SystemLocale>
+      <UILanguage>pt-BR</UILanguage>
+      <UserLocale>pt-BR</UserLocale>
+    </component>
+
+    <component name="Microsoft-Windows-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+
+      <!--
+        Layout GPT do Disk 0. Disk 0 é o único disco conectado: desconecte fisicamente
+        os drives secundários antes de bootar o instalador, senão o Setup pode espalhar
+        os arquivos de boot em outro disco e a máquina deixa de bootar se aquele drive sair.
+
+        WillWipeDisk=true apaga TUDO no Disk 0: root/home do Linux, a ESP antiga, o Windows
+        velho e a recovery dele. Não reaproveite a ESP criada pelo Linux.
+      -->
+      <DiskConfiguration>
+        <WillShowUI>OnError</WillShowUI>
+        <Disk wcm:action="add">
+          <DiskID>0</DiskID>
+          <WillWipeDisk>true</WillWipeDisk>
+          <CreatePartitions>
+            <!--
+              ESP de 1024 MB. O default histórico de 100 MB (e o que o próprio Setup cria
+              sozinho) é pequeno demais: causa falha de servicing no 25H2, com mensagem de
+              erro que não fala nada sobre espaço na ESP. A faixa sadia é 512 MB a 1 GB;
+              1 GB num NVMe moderno não custa nada.
+            -->
+            <CreatePartition wcm:action="add">
+              <Order>1</Order>
+              <Type>EFI</Type>
+              <Size>1024</Size>
+            </CreatePartition>
+            <!-- Microsoft Reserved. 16 MB é o valor canônico para discos GPT. -->
+            <CreatePartition wcm:action="add">
+              <Order>2</Order>
+              <Type>MSR</Type>
+              <Size>16</Size>
+            </CreatePartition>
+            <!--
+              Windows ocupa todo o resto do disco. Extend só pode aparecer na ÚLTIMA
+              partição criada, então a recovery NÃO pode ser declarada aqui: ela é
+              recortada do fim do C: no pass specialize (seção 2 deste arquivo).
+            -->
+            <CreatePartition wcm:action="add">
+              <Order>3</Order>
+              <Type>Primary</Type>
+              <Extend>true</Extend>
+            </CreatePartition>
+          </CreatePartitions>
+          <ModifyPartitions>
+            <ModifyPartition wcm:action="add">
+              <Order>1</Order>
+              <PartitionID>1</PartitionID>
+              <Label>System</Label>
+              <Format>FAT32</Format>
+            </ModifyPartition>
+            <!-- A MSR não é formatada nem recebe letra. Por isso não aparece aqui. -->
+            <ModifyPartition wcm:action="add">
+              <Order>2</Order>
+              <PartitionID>3</PartitionID>
+              <Label>Windows</Label>
+              <Letter>C</Letter>
+              <Format>NTFS</Format>
+            </ModifyPartition>
+          </ModifyPartitions>
+        </Disk>
+      </DiskConfiguration>
+
+      <ImageInstall>
+        <OSImage>
+          <InstallTo>
+            <DiskID>0</DiskID>
+            <PartitionID>3</PartitionID>
+          </InstallTo>
+          <InstallToAvailablePartition>false</InstallToAvailablePartition>
+          <WillShowUI>OnError</WillShowUI>
+        </OSImage>
+      </ImageInstall>
+
+      <UserData>
+        <!--
+          VK7JG-NPHTM-C97JM-9MPGT-3V66T é a chave genérica de SELEÇÃO de edition do
+          Windows 11 Pro. Ela SELECIONA a edition dentro do install.wim e pula a tela de
+          "qual versão instalar". Ela NÃO ATIVA nada: é pública, não é uma licença.
+          A ativação vem da licença digital da máquina, e só reativa sozinha se a edition
+          instalada for a MESMA que estava ativada antes (confira em Settings > Activation
+          antes do wipe, README Fase 0).
+
+          Escolhemos a chave em vez de InstallFrom/MetaData com /IMAGE/NAME de propósito:
+          os nomes das imagens dentro de um ISO pt-BR são localizados, e errar a string
+          faz o Setup parar numa tela de seleção que nenhum answer file preenche.
+        -->
+        <ProductKey>
+          <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
+          <WillShowUI>OnError</WillShowUI>
+        </ProductKey>
+        <AcceptEula>true</AcceptEula>
+      </UserData>
+
+    </component>
+  </settings>
+
+  <!-- ============================================================================
+       2. specialize — fuso, PreventDeviceEncryption e a partição de recovery
+       ============================================================================ -->
+  <settings pass="specialize">
+
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <!-- Horário de Brasília. O nome do fuso no Windows é este, em inglês, sempre. -->
+      <TimeZone>E. South America Standard Time</TimeZone>
+      <!--
+        ComputerName é omitido de propósito: o Setup gera um DESKTOP-XXXXXXX aleatório e
+        renomear a máquina depois é trivial (Settings > System > About > Rename this PC).
+        O que NÃO dá para renomear depois é o nome da conta local, lá embaixo.
+      -->
+    </component>
+
+    <component name="Microsoft-Windows-Deployment"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <RunSynchronous>
+
+        <!--
+          ITEM Nº 1 DE RISCO DE PERDA DE DADOS.
+          Numa instalação limpa que qualifica, o Windows inicializa device encryption no
+          drive do SO E em todos os fixed data drives, com clear key, INDEPENDENTEMENTE de
+          ser conta local ou conta Microsoft. Conta local muda só o escrow: o volume fica
+          "encrypted but unprotected" e NENHUMA recovery key existe em lugar nenhum.
+          O 24H2 removeu os pré-requisitos de DMA/HSTI, então esta máquina qualifica.
+          Pior: uma máquina que não qualificava passa a auto-habilitar assim que qualifica,
+          por exemplo quando você liga o Secure Boot na BIOS. Isto não é cinto e suspensório,
+          é obrigatório.
+
+          Se por algum motivo este answer file não estiver em uso, o fallback manual é
+          Shift+F10 na tela de região e rodar a mesma linha à mão.
+
+          Todo comando aqui termina com "& exit /b 0" de propósito: um RunSynchronousCommand
+          que sai com código diferente de zero pode abortar o Setup, e um Setup abortado
+          nesta altura é um loop de reboot numa máquina já formatada. Falha silenciosa aqui
+          é preferível; o windows-verify.ps1 confere tudo depois do primeiro boot.
+        -->
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Impede a device encryption automatica do BitLocker</Description>
+          <Path>cmd.exe /c reg.exe add HKLM\SYSTEM\CurrentControlSet\Control\BitLocker /v PreventDeviceEncryption /t REG_DWORD /d 1 /f &amp; exit /b 0</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+
+        <!--
+          Partição de recovery (WinRE), 990 MB, IMEDIATAMENTE depois da partição do Windows.
+
+          Por que via diskpart e não via DiskConfiguration: no answer file, Extend só vale
+          para a última partição do disco. Ou o Windows ocupa o resto do disco (e aí não há
+          onde declarar a recovery depois dele), ou o Windows recebe um tamanho fixo em MB
+          (e aí o arquivo passa a depender do tamanho exato do NVMe). A saída é deixar o
+          Windows com Extend e recortar 990 MB do FIM dele aqui, com o disco já instalado.
+
+          990 MB é o tamanho de folga para o WinRE atual. O mínimo funcional é 300 MB.
+
+          Modo de falha é benigno: se qualquer passo abaixo falhar, o Windows continua
+          bootando normalmente e o WinRE continua morando em C:\Recovery\WindowsRE, que é
+          plenamente funcional. Você perde só a partição dedicada.
+
+          Os echo escrevem o script de diskpart linha a linha porque um RunSynchronousCommand
+          executa UM comando; não há heredoc aqui. &gt; e &gt;&gt; estão escapados por serem XML.
+        -->
+        <RunSynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>Script diskpart (1/6): seleciona o volume do Windows</Description>
+          <Path>cmd.exe /c echo select volume C&gt;C:\Windows\Temp\recovery-part.txt</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Description>Script diskpart (2/6): encolhe C: em 990 MB</Description>
+          <Path>cmd.exe /c echo shrink desired=990 minimum=990&gt;&gt;C:\Windows\Temp\recovery-part.txt</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <Description>Script diskpart (3/6): cria a particao no espaco liberado</Description>
+          <Path>cmd.exe /c echo create partition primary&gt;&gt;C:\Windows\Temp\recovery-part.txt</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <Description>Script diskpart (4/6): formata NTFS com label Recovery</Description>
+          <Path>cmd.exe /c echo format quick fs=ntfs label="Recovery"&gt;&gt;C:\Windows\Temp\recovery-part.txt</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <!--
+          de94bba4-06d1-4d40-a16a-bfd50179d6ac é o GUID de tipo GPT "Windows Recovery
+          Environment". Sem ele o reagentc não reconhece a partição como destino do WinRE.
+        -->
+        <RunSynchronousCommand wcm:action="add">
+          <Order>6</Order>
+          <Description>Script diskpart (5/6): marca o tipo GPT como Windows RE</Description>
+          <Path>cmd.exe /c echo set id=de94bba4-06d1-4d40-a16a-bfd50179d6ac&gt;&gt;C:\Windows\Temp\recovery-part.txt</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <!--
+          0x8000000000000001 = GPT_ATTRIBUTE_PLATFORM_REQUIRED (0x1, o Windows não mexe nela)
+          + NO_DRIVE_LETTER (0x8000000000000000, não aparece no Explorer).
+        -->
+        <RunSynchronousCommand wcm:action="add">
+          <Order>7</Order>
+          <Description>Script diskpart (6/6): atributos GPT de particao de sistema</Description>
+          <Path>cmd.exe /c echo gpt attributes=0x8000000000000001&gt;&gt;C:\Windows\Temp\recovery-part.txt</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>8</Order>
+          <Description>Executa o script de diskpart</Description>
+          <Path>cmd.exe /c C:\Windows\System32\diskpart.exe /s C:\Windows\Temp\recovery-part.txt &amp; exit /b 0</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <!--
+          O par disable/enable é o que move o winre.wim de C:\Recovery\WindowsRE para a
+          partição recém-criada. Só nessa ordem funciona.
+        -->
+        <RunSynchronousCommand wcm:action="add">
+          <Order>9</Order>
+          <Description>Desregistra o WinRE antes de reposiciona-lo</Description>
+          <Path>cmd.exe /c C:\Windows\System32\ReAgentc.exe /disable &amp; exit /b 0</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>10</Order>
+          <Description>Registra o WinRE na particao de recovery dedicada</Description>
+          <Path>cmd.exe /c C:\Windows\System32\ReAgentc.exe /enable &amp; exit /b 0</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>11</Order>
+          <Description>Remove o script temporario de diskpart</Description>
+          <Path>cmd.exe /c del /f /q C:\Windows\Temp\recovery-part.txt &amp; exit /b 0</Path>
+          <WillReboot>Never</WillReboot>
+        </RunSynchronousCommand>
+
+      </RunSynchronous>
+    </component>
+  </settings>
+
+  <!-- ============================================================================
+       3. oobeSystem — idioma final, conta local, OOBE mudo e limpeza do Panther
+       ============================================================================ -->
+  <settings pass="oobeSystem">
+
+    <component name="Microsoft-Windows-International-Core"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+      <!-- Mesmos valores do windowsPE, agora para o sistema instalado. -->
+      <InputLocale>0416:00010416</InputLocale>
+      <SystemLocale>pt-BR</SystemLocale>
+      <UILanguage>pt-BR</UILanguage>
+      <UserLocale>pt-BR</UserLocale>
+    </component>
+
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64"
+               publicKeyToken="31bf3856ad364e35"
+               language="neutral"
+               versionScope="nonSxS">
+
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <!--
+          HideOnlineAccountScreens é o que evita ser empurrado para uma conta Microsoft.
+          Isso importa além do gosto pessoal: com MSA no OOBE, o %USERPROFILE% é derivado
+          dos ~5 primeiros caracteres do e-mail (vira algo como C:\Users\ranie) e NÃO tem
+          como renomear depois. Conta local primeiro; anexar a MSA depois, se quiser,
+          é uma opção em Settings e não mexe no perfil.
+        -->
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideLocalAccountScreen>true</HideLocalAccountScreen>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <!-- 3 = não aplicar as "configurações recomendadas" de privacidade/telemetria. -->
+        <ProtectYourPC>3</ProtectYourPC>
+      </OOBE>
+
+      <UserAccounts>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add">
+            <!--
+              ATENÇÃO: este nome define C:\Users\<nome> para sempre. Não existe caminho
+              suportado para renomear a pasta de perfil depois. Troque aqui, agora,
+              se quiser outro. Grupo Administrators porque é a única conta da máquina.
+            -->
+            <Name>ranielli</Name>
+            <DisplayName>ranielli</DisplayName>
+            <Group>Administrators</Group>
+            <Password>
+              <!--
+                @@LOCAL_ACCOUNT_PASSWORD@@ é substituído pelo build-usb.sh a partir de um
+                arquivo fora do repo. NUNCA commite a senha aqui: o repo é público, e o
+                autounattend.xml gerado está no .gitignore por causa disso.
+
+                PlainText=true é intencional. A alternativa (PlainText=false com base64 de
+                UTF-16LE) é ofuscação, não criptografia: quem tem o arquivo tem a senha do
+                mesmo jeito. Preferimos ser honestos e tratar o problema onde ele é real:
+                as cópias do answer file são apagadas no primeiro logon (FirstLogonCommands
+                abaixo) e a recomendação é TROCAR a senha depois do primeiro boot.
+              -->
+              <Value>@@LOCAL_ACCOUNT_PASSWORD@@</Value>
+              <PlainText>true</PlainText>
+            </Password>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+
+      <!--
+        Sem AutoLogon de propósito. AutoLogon exigiria repetir a senha em texto claro num
+        segundo lugar do arquivo, e o ganho (pular uma tela de login uma única vez) não paga.
+      -->
+
+      <FirstLogonCommands>
+        <!--
+          O Setup copia o answer file para C:\Windows\Panther\ e ali ele fica, com a senha
+          da conta local em texto claro, legível por qualquer processo do usuário. Apagar
+          essas cópias no primeiro logon é o mínimo.
+
+          Honestidade: os logs do Setup (setupact.log e afins) também podem conter rastros.
+          Isso não substitui trocar a senha depois do primeiro boot.
+        -->
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Apaga as copias do answer file em C:\Windows\Panther</Description>
+          <CommandLine>cmd.exe /c del /f /q C:\Windows\Panther\unattend.xml C:\Windows\Panther\autounattend.xml &amp; exit /b 0</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>Apaga C:\Windows\Panther\Unattend</Description>
+          <CommandLine>cmd.exe /c rd /s /q C:\Windows\Panther\Unattend &amp; exit /b 0</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Description>Apaga a copia em System32\Sysprep, se existir</Description>
+          <CommandLine>cmd.exe /c del /f /q C:\Windows\System32\Sysprep\unattend.xml &amp; exit /b 0</CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+
+    </component>
+  </settings>
+
+</unattend>

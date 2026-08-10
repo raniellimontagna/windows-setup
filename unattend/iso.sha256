@@ -1,0 +1,26 @@
+# iso.sha256 — hash do ISO do Windows 11 25H2 x64 em Português (Brasil) usado nesta instalação.
+#
+# Uso:  o build-usb.sh confere este hash contra o ISO ANTES de escrever qualquer coisa.
+#       Enquanto a linha abaixo estiver com o placeholder de zeros, o script se recusa a rodar.
+#
+# Como preencher:
+#   1. Baixe o ISO na página oficial de download do Windows 11 escolhendo o idioma
+#      "Português (Brasil)". O ISO é multi-EDITION, não multi-LANGUAGE: um ISO en-US não vira
+#      pt-BR por causa do UILanguage do answer file. Se baixar o idioma errado, todo o resto
+#      deste diretório é inútil.
+#   2. Na MESMA página, a Microsoft publica uma tabela de hashes SHA-256 POR IDIOMA.
+#      Copie a linha de Português (Brasil). O hash do en-US NÃO bate com o do pt-BR — se o
+#      seu ISO "falhar" na verificação, a primeira hipótese é que você copiou o hash errado.
+#   3. Cole o hash abaixo, no lugar dos zeros, e commite. O hash é o que torna esta
+#      instalação reprodutível: daqui a dois anos você saberá exatamente qual mídia foi usada.
+#
+# Formato: '<sha256 em minúsculas>  <nome do arquivo>'. O nome do arquivo é só documentação;
+# o build-usb.sh compara apenas o hash, contra o caminho passado em --iso.
+#
+# Nota: este arquivo tem comentários, então NÃO serve para 'sha256sum -c' direto.
+# Para conferir à mão:  sha256sum <arquivo.iso>   e compare visualmente com a linha abaixo.
+#
+# Não persiga a 26H1: ela é ARM-only (Snapdragon X2). A 26H2 começa a chegar por volta de
+# outubro de 2026, ou seja, depois desta instalação.
+
+0000000000000000000000000000000000000000000000000000000000000000  pt-br_windows_11_25h2_x64.iso

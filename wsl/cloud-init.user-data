@@ -1,0 +1,96 @@
+#cloud-config
+# ^ esta linha PRECISA ser a primeira do arquivo. Sem ela o cloud-init ignora
+#   o conteúdo inteiro em silêncio e você cai no OOBE normal do Ubuntu.
+#
+# cloud-init.user-data — provisionamento unattended da distro Ubuntu no WSL2.
+#
+# Uso (no Windows, PowerShell, NESTA ORDEM — a ordem é o ponto):
+#   New-Item -ItemType Directory -Force "$env:UserProfile\.cloud-init" | Out-Null
+#   Copy-Item .\wsl\cloud-init.user-data "$env:UserProfile\.cloud-init\Ubuntu-24.04.user-data"
+#   wsl --install -d Ubuntu-24.04 --no-launch
+#   wsl -d Ubuntu-24.04            # <- o cloud-init roda AQUI, no primeiro boot
+#
+# ⚠️ NÃO é idempotente, e não tem como ser: cloud-init roda SÓ no primeiro boot
+#    de uma instância nova. Se você já passou pelo OOBE e criou usuário na mão,
+#    este arquivo vira no-op silencioso. Para refazer:
+#      wsl --unregister Ubuntu-24.04   (🔒 apaga o ext4 inteiro daquela distro)
+#    e comece de novo. Por isso o `--no-launch` acima é obrigatório: ele impede
+#    o OOBE de rodar antes do arquivo existir.
+#
+# ⚠️ Fixe `Ubuntu-24.04`, nunca `Ubuntu`. O nome curto é alvo móvel (a 26.04 LTS
+#    saiu em abr/2026) e o nome do arquivo .user-data precisa bater EXATAMENTE
+#    com o nome da distro instalada.
+#
+# Conferência depois do primeiro boot, dentro da distro:
+#   cloud-init status --wait          # espera terminar e diz done/error
+#   cat /var/log/cloud-init-output.log
+
+# --- 1. Locale e fuso ---
+# Mesmo par usado no autounattend.xml do lado Windows.
+locale: pt_BR.UTF-8
+timezone: America/Sao_Paulo
+
+# --- 2. Usuário ---
+# ⚠️ Se trocar `dev`, troque também em `write_files` (/etc/wsl.conf) abaixo e no
+#    wsl.conf deste diretório. Os três precisam concordar.
+users:
+  - name: dev
+    gecos: dev
+    # Grupos padrão de um usuário interativo do Ubuntu. `sudo` é o que importa.
+    groups: [adm, sudo, dialout, cdrom, floppy, audio, dip, video, plugdev, netdev]
+    # sudo sem senha: a alternativa seria hardcodar uma senha aqui, e senha em
+    # repo público é proibido. Numa VM local de um usuário só isso é aceitável;
+    # se você quiser senha, rode `sudo passwd dev` depois e troque a linha
+    # abaixo por `sudo: ALL=(ALL) ALL`.
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    # ⚠️ NÃO coloque /bin/zsh aqui. O módulo que cria usuários roda ANTES do
+    #    módulo que instala pacotes — o zsh ainda não existe neste ponto. O
+    #    provision.sh faz o `chsh` depois, quando o binário já está no disco.
+    shell: /bin/bash
+
+# --- 3. /etc/wsl.conf ---
+# Duplica o conteúdo de wsl/wsl.conf de propósito: aqui ele precisa existir já
+# no primeiro boot (é o que evita o OOBE pedir usuário). O provision.sh
+# reinstala a partir do arquivo do repo, então os dois convergem.
+write_files:
+  - path: /etc/wsl.conf
+    permissions: "0644"
+    content: |
+      [boot]
+      systemd = true
+
+      [user]
+      default = dev
+
+# --- 4. Pacotes base ---
+# Só o essencial para a primeira shell já ser utilizável. O resto (e as versões
+# opcionais que podem não existir no noble) fica no provision.sh, que é
+# tolerante a falha — aqui um pacote inexistente faz o módulo inteiro falhar.
+package_update: true
+# Upgrade completo deixaria o primeiro boot longuíssimo sem feedback na tela.
+# Rode `sudo apt full-upgrade` depois, vendo o que está acontecendo.
+package_upgrade: false
+packages:
+  - zsh
+  # Plugins do zsh vêm do apt no Ubuntu (no Mac vêm do Homebrew). Os paths
+  # mudam — é o que o zshrc.linux conserta.
+  - zsh-autosuggestions
+  - zsh-syntax-highlighting
+  - git
+  - curl
+  - wget
+  - ca-certificates
+  - unzip
+  - build-essential
+  - jq
+  - ripgrep
+  # No Ubuntu os binários se chamam `fdfind` e `batcat` (conflito de nome com
+  # outros pacotes). O provision.sh cria os shims em ~/.local/bin.
+  - fd-find
+  - bat
+  # Ubuntu 24.04 traz fzf 0.44.1 — `fzf --zsh` só existe a partir do 0.48.0.
+  # Ver zshrc.linux: usamos /usr/share/doc/fzf/examples/key-bindings.zsh.
+  - fzf
+
+final_message: "cloud-init OK em $UPTIME s. Proximo passo: bash provision.sh"

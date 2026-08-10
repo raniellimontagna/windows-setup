@@ -8,7 +8,11 @@
 *.sh   text eol=lf
 *.bash text eol=lf
 *.conf text eol=lf
-user-data text eol=lf
+# Precisa do glob: o padrao `user-data` sozinho NAO casa com `cloud-init.user-data`.
+# Sem isso o arquivo cai no `* text=auto`, um clone no Windows (Git for Windows
+# instala com core.autocrlf=true) o materializa com CRLF, e o header `#cloud-config`
+# com \r vira no-op silencioso — o cloud-init simplesmente nao roda.
+*.user-data text eol=lf
 
 *.ps1  text eol=crlf
 *.psm1 text eol=crlf

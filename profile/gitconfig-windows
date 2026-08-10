@@ -1,0 +1,102 @@
+#
+# gitconfig-windows — FONTE ÚNICA dos ajustes do Git que só existem/importam no Windows
+#
+# Este arquivo é a única definição de `core.autocrlf`, `core.longpaths` e
+# `core.symlinks` no lado Windows. O `setup.ps1` NÃO seta mais essas três chaves
+# direto com `git config --global core.*` — ele só registra a inclusão:
+#
+#     git config --global include.path "<caminho absoluto deste arquivo no clone>"
+#
+# O caminho é resolvido em runtime a partir do `$PSScriptRoot` do `setup.ps1`
+# (`<repo>\profile\gitconfig-windows`), não hardcoded: o `bootstrap.ps1` aceita
+# `-TargetDir`, então o clone nem sempre cai no default
+# `%USERPROFILE%\Projetos\pessoal\windows-setup`.
+#
+# Consequências de ser include, e não cópia:
+#   - editar este arquivo no repo muda o git da máquina na hora, sem re-rodar nada;
+#   - se o clone for movido ou apagado, a inclusão vira no-op SILENCIOSO (o git ignora
+#     include.path quebrado, sem aviso) e as três chaves voltam ao default do
+#     instalador do Git for Windows — que para `autocrlf` é `true`, o oposto daqui.
+#
+# BARRA NORMAL no caminho: o git trata "\" como escape dentro de valor de config, e a
+# inclusão falha em silêncio com contrabarra.
+#
+# Seguro rodar várias vezes: `git config --global include.path <x>` SUBSTITUI o valor.
+# Nunca use `--add` aqui, senão cada execução empilha uma inclusão duplicada.
+#
+# Verificação (a inclusão é silenciosa quando dá errado — sempre confira):
+#   git config --show-origin --get core.longpaths
+# Tem que imprimir ESTE arquivo como origem. Se imprimir o `~/.gitconfig`, alguém
+# voltou a setar a chave direto; se não imprimir nada, o include não pegou.
+#
+# O que NÃO está aqui: identidade, aliases, delta, pull/push/fetch. Isso é comum aos
+# dois SOs e continua no setup.sh/setup.ps1, exatamente como no mac-setup.
+#
+# O WSL NÃO herda este arquivo. Dentro da distro o git é outro binário, com outro
+# `~/.gitconfig` no ext4, configurado pelo `wsl/provision.sh` — que setá lá, de
+# propósito, `core.autocrlf input` (valor diferente do daqui; ver seção 1).
+#
+
+# --- 1. Fim de linha ---------------------------------------------------------
+# `false`: o git não converte NADA por conta própria — nem no checkout, nem no commit.
+#
+# O default do instalador do Git for Windows é `true` (converte para CRLF no checkout).
+# Aqui a escolha é outra, de propósito: quem manda em line ending é o `.gitattributes`
+# de cada repo. Este aqui fixa `*.sh text eol=lf` e `*.ps1 text eol=crlf` desde o
+# primeiro commit, e é isso que garante que um `.sh` chegue com LF do outro lado.
+#
+# Por que não `true` nem `input`: com `.gitattributes` presente ELE já decide, e o
+# autocrlf vira uma segunda camada de conversão sobre arquivo já normalizado — em repo
+# de terceiro, sem `.gitattributes`, é o que produz diff de arquivo inteiro e
+# working tree "sujo" logo depois de clonar. `false` elimina a camada dupla.
+#
+# O modo de falha que isso evita continua sendo o mesmo: um `.sh` com CRLF morre no
+# bash com `$'\r': command not found`, erro infernal de diagnosticar porque o arquivo
+# "parece" certo em qualquer editor. Editor moderno nenhum (VS Code, Notepad do Win11)
+# tem problema com LF, então não há nada a ganhar convertendo.
+#
+# Nota WSL: o `wsl/provision.sh` seta `core.autocrlf input` no git de DENTRO da distro.
+# Não é contradição — são dois gits com dois configs. Lá `input` é rede de segurança
+# para repos sem `.gitattributes`; aqui o `.gitattributes` do repo já resolve.
+[core]
+	autocrlf = false
+
+# --- 2. Caminhos longos ------------------------------------------------------
+# O limite MAX_PATH de 260 caracteres é modo de falha REAL com node_modules aninhado
+# embaixo de %USERPROFILE%.
+#
+# PEGADINHA: ligar LongPathsEnabled=1 em
+#   HKLM\SYSTEM\CurrentControlSet\Control\FileSystem
+# (o que o windows-defaults.ps1 faz) NÃO resolve para o git. Aquela chave só afeta
+# aplicativos cujo manifesto declara `longPathAware`, e o git.exe não declara — ele
+# precisa da própria configuração. As duas coisas são necessárias, não alternativas.
+#
+# Escopo: este arquivo entra via include no `--global`, ou seja, vale para o usuário
+# atual. Para valer também em serviços, runners e sessões de outro usuário é preciso o
+# escopo `--system` (`C:\Program Files\Git\etc\gitconfig`), que exige elevação — o
+# `setup.ps1` faz isso separado, no bloco elevado:
+#   git config --system core.longpaths true
+	longpaths = true
+
+# --- 3. Symlinks -------------------------------------------------------------
+# `false` — que também é o default do Git for Windows, mas fica explícito aqui para
+# ninguém "consertar" isso depois sem ler o motivo.
+#
+# Por que não `true`: symlink no Windows exige SeCreateSymbolicLinkPrivilege, isto é,
+# shell elevado ou Developer Mode ligado. Com `core.symlinks=true` o resultado do
+# checkout passa a depender de um privilégio que varia por conta e por elevação — a
+# mesma máquina se comporta de um jeito no shell normal e de outro no elevado, e a
+# falha aparece como checkout parcial em vez de erro claro. Este setup escolheu
+# estratégias SEM symlink dos dois lados (stub que faz dot-source no $PROFILE,
+# $env:STARSHIP_CONFIG apontando para o clone do mac-setup), então não há motivo para
+# depender do privilégio — mesmo com o Developer Mode ligado cedo pelo `setup.ps1`.
+#
+# Consequência honesta de deixar `false`: ao clonar um repo que contém symlinks, cada
+# symlink é materializado como um ARQUIVO DE TEXTO comum, cujo conteúdo é o caminho do
+# alvo. Nada quebra alto — o repo simplesmente não funciona, e a causa é invisível.
+# A diferença é que essa falha é determinística e está documentada aqui.
+#
+# Se um repo específico realmente precisar de symlinks, ative por clone (com o
+# Developer Mode confirmado):
+#   git clone -c core.symlinks=true <url>
+	symlinks = false

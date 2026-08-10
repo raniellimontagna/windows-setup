@@ -1,0 +1,97 @@
+# zshrc.linux — fragmento OS-specific do zsh dentro do WSL (Ubuntu).
+#
+# Uso: NÃO é o seu ~/.zshrc. É sourceado no FINAL do ~/.zshrc que o
+#      provision.sh gera, logo depois do zshrc compartilhado do mac-setup:
+#
+#        ~/.zshrc  ->  PATH de ~/.local/bin (topo!)
+#                  ->  source ~/Projetos/pessoal/mac-setup/zshrc[.common]
+#                  ->  source ~/.zshrc.linux   (este arquivo)
+#
+# Seguro sourcear várias vezes (idempotente).
+#
+# Existe porque quatro coisas do zshrc do Mac quebram no Ubuntu. Três falham em
+# SILÊNCIO (guard `[ -f ]` ou `2>/dev/null`), que é o pior tipo de quebra: você
+# só percebe semanas depois, achando que "o WSL é ruim".
+
+# --- 1. PATH de ~/.local/bin ---
+# Cinto e suspensório: o ~/.zshrc gerado já põe isso no TOPO, antes de sourcear
+# o zshrc do Mac. O motivo é ordem, não redundância — o bloco `# --- CLI
+# modernas ---` do zshrc compartilhado roda `command -v bat`, e no Mac o
+# `export PATH="$HOME/.local/bin:$PATH"` está ~40 linhas ABAIXO desse bloco. No
+# Linux o `bat` só existe como shim em ~/.local/bin, então se o PATH entrar
+# depois, o teste dá negativo e o BAT_THEME nunca é exportado.
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
+# --- 2. bat -> batcat, fd -> fdfind ---
+# No Ubuntu os binários mudam de nome (conflito com outros pacotes). O
+# mecanismo principal são os symlinks em ~/.local/bin criados pelo
+# provision.sh — symlink vale para scripts e subprocessos, alias não. Os
+# aliases abaixo são só rede de segurança para shell interativa caso o
+# provision.sh não tenha rodado ainda.
+if ! command -v bat >/dev/null 2>&1 && command -v batcat >/dev/null 2>&1; then
+  alias bat='batcat'
+fi
+if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
+  alias fd='fdfind'
+fi
+# O zshrc do Mac exporta BAT_THEME só se `command -v bat` passar. Com o shim
+# via alias (sem symlink) ele não passa — reexporta aqui.
+command -v batcat >/dev/null 2>&1 && export BAT_THEME="ansi"
+
+# --- 3. pnpm ---
+# BUG REAL herdado do Mac, não no-op: o zshrc compartilhado faz
+# `export PNPM_HOME="$HOME/Library/pnpm"` sem guard de SO. No Linux o caminho
+# correto é ~/.local/share/pnpm — sem isso o `pnpm setup`/`pnpm add -g` grava
+# num lugar e o PATH aponta para outro.
+export PNPM_HOME="$HOME/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# (A entrada morta ~/Library/pnpm que o zshrc do Mac deixou no PATH é
+#  inofensiva — o diretório não existe. Não vale a ginástica de remover.)
+
+# --- 4. fzf ---
+# O Ubuntu 24.04 traz fzf 0.44.1 e a flag `--zsh` só existe a partir do 0.48.0.
+# O `source <(fzf --zsh) 2>/dev/null` do zshrc do Mac engole o erro e você
+# perde Ctrl+R (histórico) e Ctrl+T (arquivos) sem nenhuma pista.
+if [ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]; then
+  source /usr/share/doc/fzf/examples/key-bindings.zsh
+fi
+# Completion no mesmo diretório em algumas versões do pacote (nao verificado
+# para o noble) — guard `[ -f ]` faz disso um no-op seguro se não existir.
+if [ -f /usr/share/doc/fzf/examples/completion.zsh ]; then
+  source /usr/share/doc/fzf/examples/completion.zsh
+fi
+
+# --- 5. Plugins do zsh ---
+# Maior regressão diária: no Mac vêm de /opt/homebrew/share/..., e o guard
+# `[ -f ]` do zshrc compartilhado simplesmente não dispara no Linux. No Ubuntu
+# os pacotes zsh-autosuggestions / zsh-syntax-highlighting instalam aqui:
+[ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && \
+  source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# --- 6. Correções de baixo impacto herdadas do zshrc do Mac ---
+# EDITOR="code --wait": dentro do WSL o `code` existe se você abrir a pasta
+# pelo VS Code do Windows (o server injeta o wrapper no PATH). Numa shell
+# solta, não. Sem fallback, `git commit` sem -m morre.
+if ! command -v code >/dev/null 2>&1; then
+  export EDITOR="vim"
+  export VISUAL="$EDITOR"
+fi
+# Aliases de iOS não fazem sentido aqui (o Simulator é trabalho de Mac) e só
+# poluem o autocomplete. JAVA_HOME/ANDROID_HOME do zshrc do Mac são no-op
+# silencioso no Linux (guards `[ -x ]`/`[ -d ]` falham) — isso é correto, e
+# não deve ser "consertado": Android/React Native continuam sendo trabalho de
+# Mac, não de WSL (sem USB sem usbipd-win, e o emulador briga com a VM).
+unalias ios      2>/dev/null || true
+unalias ios-list 2>/dev/null || true
+
+# --- 7. zsh-syntax-highlighting ---
+# IMPORTANTE: precisa ser o ÚLTIMO source de toda a cadeia de zshrc. Como este
+# fragmento é sourceado por último pelo ~/.zshrc, o lugar dele é aqui embaixo.
+[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && \
+  source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

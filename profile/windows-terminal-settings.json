@@ -1,0 +1,144 @@
+{
+    // windows-terminal-settings.json — config do Windows Terminal
+    // (substituto direto do ghostty-config do mac-setup: mesma fonte, mesmo tema.)
+    // Uso:  NÃO edite o settings.json do Terminal direto. Edite ESTE arquivo e rode
+    //           Sync-WindowsTerminalSettings
+    //       (função definida em profile/Microsoft.PowerShell_profile.ps1), depois
+    //       reinicie o Terminal.
+    // Idempotente: a sync só escreve se o conteúdo mudou, e guarda um .bak do anterior.
+    //
+    // POR QUE CÓPIA E NÃO SYMLINK: o Windows Terminal reescreve o settings.json inteiro
+    // quando você mexe em qualquer coisa pela UI (e sozinho, ao migrar schema). Ao fazer
+    // isso ele grava um ARQUIVO NOVO por cima — o symlink é destruído e as suas edições
+    // seguintes no repo param de chegar em lugar nenhum, sem erro nenhum. Além disso,
+    // symlink no Windows exige admin ou Developer Mode. Cópia + função de sync deixa o
+    // fluxo explícito e sem privilégio.
+    //
+    // O Windows Terminal aceita comentários // neste arquivo (jsonc) e sempre o lê como
+    // UTF-8. NÃO copie esse hábito para os JSON consumidos por script: o
+    // ConvertFrom-Json do PowerShell 5.1 não aceita comentário.
+
+    "$schema": "https://aka.ms/terminal-profiles-schema",
+
+    // --- 1. Perfil padrão -----------------------------------------------------
+    // Aponta para a GUID do perfil que ESTE arquivo declara (seção 4). O plano fixa o
+    // PS7 como shell padrão; o PS 5.1 continua na lista porque o Win11Debloat só roda
+    // nele (o módulo Appx falha no PowerShell Core).
+    // `defaultProfile` também aceita o NOME do perfil como string, mas a GUID é imune
+    // a renomeação.
+    "defaultProfile": "{e3c5e508-6db6-435e-881d-e7ca1d08c688}",
+
+    // Desliga o gerador dinâmico de perfis do PowerShell Core. Sem isso o Terminal
+    // criaria um segundo perfil "PowerShell", com GUID própria (gerada por ele, não
+    // versionável), ao lado do nosso — dois itens iguais no menu. O gerador do WSL fica
+    // LIGADO de propósito: se um dia a distro for instalada, ela aparece sozinha.
+    "disabledProfileSources": [ "Windows.Terminal.PowershellCore" ],
+
+    // --- 2. Janela ------------------------------------------------------------
+    "initialCols": 120,
+    "initialRows": 32,
+    "copyOnSelect": false,
+    "copyFormatting": "none",
+    "theme": "Catppuccin Mocha",
+
+    // --- 3. Aparência (mesmo tema e fonte do ghostty no Mac) ------------------
+    "themes": [
+        {
+            "name": "Catppuccin Mocha",
+            "tab": {
+                "background": "#1E1E2EFF",
+                "showCloseButton": "always",
+                "unfocusedBackground": null
+            },
+            "tabRow": {
+                "background": "#181825FF",
+                "unfocusedBackground": "#11111BFF"
+            },
+            "window": {
+                "applicationTheme": "dark"
+            }
+        }
+    ],
+
+    "schemes": [
+        {
+            "name": "Catppuccin Mocha",
+
+            "cursorColor": "#F5E0DC",
+            "selectionBackground": "#585B70",
+
+            "background": "#1E1E2E",
+            "foreground": "#CDD6F4",
+
+            "black": "#45475A",
+            "red": "#F38BA8",
+            "green": "#A6E3A1",
+            "yellow": "#F9E2AF",
+            "blue": "#89B4FA",
+            "purple": "#F5C2E7",
+            "cyan": "#94E2D5",
+            "white": "#BAC2DE",
+
+            "brightBlack": "#585B70",
+            "brightRed": "#F38BA8",
+            "brightGreen": "#A6E3A1",
+            "brightYellow": "#F9E2AF",
+            "brightBlue": "#89B4FA",
+            "brightPurple": "#F5C2E7",
+            "brightCyan": "#94E2D5",
+            "brightWhite": "#A6ADC8"
+        }
+    ],
+
+    // --- 4. Perfis ------------------------------------------------------------
+    "profiles": {
+        // `defaults` vale para TODOS os perfis, inclusive os gerados dinamicamente
+        // (WSL, Azure Cloud Shell). É por isso que a fonte e o tema ficam aqui, e não
+        // repetidos perfil a perfil.
+        "defaults": {
+            // Nome da família instalada pelo pacote DEVCOM.JetBrainsMonoNerdFont.
+            // Se o prompt do Starship aparecer com quadradinhos, confira o nome exato
+            // em Configurações > Fontes do Windows — algumas builds registram a família
+            // como "JetBrainsMono NF" ou "JetBrainsMono Nerd Font Mono".
+            "font": {
+                "face": "JetBrainsMono Nerd Font",
+                "size": 12
+            },
+            "colorScheme": "Catppuccin Mocha",
+            // Mesmo respiro do ghostty-config (window-padding-x 10 / -y 8).
+            // Ordem: esquerda, topo, direita, base.
+            "padding": "10, 8, 10, 8",
+            "antialiasingMode": "grayscale",
+            "scrollbarState": "visible",
+            "historySize": 10000,
+            // Acrylic desligado: transparência custa GPU à toa numa máquina que também
+            // é de jogo, e atrapalha a leitura de log colorido.
+            "useAcrylic": false
+        },
+
+        "list": [
+            {
+                // GUID fixa, gerada uma vez para este repo. Não mude — é ela que o
+                // defaultProfile referencia.
+                "guid": "{e3c5e508-6db6-435e-881d-e7ca1d08c688}",
+                "name": "PowerShell 7",
+                // pwsh.exe entra no PATH pelo MSI do Microsoft.PowerShell. O pacote
+                // MSIX NÃO serve: ele bloqueia o perfil AllUsers e o Set-ExecutionPolicy
+                // -Scope LocalMachine — é por isso que o plano manda instalar com
+                // --installer-type wix enquanto ainda houver MSI.
+                "commandline": "pwsh.exe -NoLogo",
+                "startingDirectory": "%USERPROFILE%\\Projetos",
+                "hidden": false
+            },
+            {
+                // PS 5.1: mantido visível de propósito. O Win11Debloat só roda aqui (o
+                // módulo Appx falha no PowerShell Core), e vários passos de bootstrap
+                // dependem dele numa máquina recém-instalada, antes de o PS7 existir.
+                "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+                "name": "Windows PowerShell",
+                "commandline": "powershell.exe",
+                "hidden": false
+            }
+        ]
+    }
+}

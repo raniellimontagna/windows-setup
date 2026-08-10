@@ -1,0 +1,60 @@
+{
+  "$schema": "https://aka.ms/winget-packages.schema.2.0.json",
+  "CreationDate": "2026-08-10T00:00:00.000-03:00",
+  "Sources": [
+    {
+      "SourceDetails": {
+        "Argument": "https://cdn.winget.microsoft.com/cache",
+        "Identifier": "Microsoft.Winget.Source_8wekyb3d8bbwe",
+        "Name": "winget",
+        "Type": "Microsoft.PreIndexed.Package"
+      },
+      "Packages": [
+        { "PackageIdentifier": "Git.Git" },
+        { "PackageIdentifier": "GitHub.cli" },
+        { "PackageIdentifier": "Amazon.AWSCLI" },
+        { "PackageIdentifier": "Schniz.fnm" },
+        { "PackageIdentifier": "astral-sh.uv" },
+        { "PackageIdentifier": "GoLang.Go" },
+        { "PackageIdentifier": "BurntSushi.ripgrep.MSVC" },
+        { "PackageIdentifier": "sharkdp.fd" },
+        { "PackageIdentifier": "sharkdp.bat" },
+        { "PackageIdentifier": "eza-community.eza" },
+        { "PackageIdentifier": "ajeetdsouza.zoxide" },
+        { "PackageIdentifier": "junegunn.fzf" },
+        { "PackageIdentifier": "jqlang.jq" },
+        { "PackageIdentifier": "JesseDuffield.lazygit" },
+        { "PackageIdentifier": "dandavison.delta" },
+        { "PackageIdentifier": "Starship.Starship" },
+        { "PackageIdentifier": "aristocratos.btop4win" },
+        { "PackageIdentifier": "ggml.llamacpp" },
+
+        { "PackageIdentifier": "Microsoft.WindowsTerminal" },
+        { "PackageIdentifier": "Warp.Warp" },
+        { "PackageIdentifier": "DEVCOM.JetBrainsMonoNerdFont" },
+
+        { "PackageIdentifier": "Microsoft.VisualStudioCode" },
+        { "PackageIdentifier": "Docker.DockerDesktop" },
+        { "PackageIdentifier": "Bruno.Bruno" },
+        { "PackageIdentifier": "DBeaver.DBeaver.Community" },
+
+        { "PackageIdentifier": "Google.Chrome" },
+        { "PackageIdentifier": "Obsidian.Obsidian" },
+        { "PackageIdentifier": "Bitwarden.Bitwarden" },
+        { "PackageIdentifier": "Tailscale.Tailscale" },
+        { "PackageIdentifier": "Discord.Discord" },
+        { "PackageIdentifier": "Telegram.TelegramDesktop" },
+
+        { "PackageIdentifier": "Ollama.Ollama" },
+        { "PackageIdentifier": "ElementLabs.LMStudio" },
+
+        { "PackageIdentifier": "Microsoft.PowerToys" },
+        { "PackageIdentifier": "ShareX.ShareX" },
+        { "PackageIdentifier": "7zip.7zip" },
+        { "PackageIdentifier": "voidtools.Everything" },
+        { "PackageIdentifier": "CrystalDewWorld.CrystalDiskInfo" },
+        { "PackageIdentifier": "Highresolution.X-MouseButtonControl" }
+      ]
+    }
+  ]
+}

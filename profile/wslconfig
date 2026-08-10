@@ -1,0 +1,70 @@
+#
+# wslconfig — configuração global da VM do WSL2 (vale para TODAS as distros)
+# Destino:  %USERPROFILE%\.wslconfig   (com ponto na frente; o nome no repo não tem
+#           ponto só para o arquivo não ficar oculto aqui)
+# Uso:      copie para o destino ANTES de criar a distro (ver sparseVhd), e depois
+#               wsl --shutdown
+# Seguro copiar várias vezes (idempotente): é um arquivo de estado declarativo, sem
+# efeito colateral. O que muda comportamento não é a cópia, é o shutdown.
+#
+# --- LEIA ANTES DE USAR ------------------------------------------------------
+# 1) O plano NÃO recomenda instalar WSL2 nesta máquina por padrão. Habilitar o Virtual
+#    Machine Platform coloca o Windows inteiro sob o hypervisor (custo típico de 2-5%
+#    de FPS), e "desabilite Hyper-V/VBS/WSL" é conselho de primeira linha no
+#    troubleshooting do anticheat do EA FC — que é o motivo desta migração. O dev
+#    principal é o Mac e já existe um Proxmox. Este arquivo só importa se a decisão
+#    tiver sido "sim".
+#    Válvula de escape, se instalar:  bcdedit /set hypervisorlaunchtype off  + reboot
+#    para sessões competitivas, e  auto  para voltar.
+#
+# 2) REGRA DOS 8 SEGUNDOS: mudança em .wslconfig (ou em wsl.conf) só vale depois que a
+#    VM para de vez — o WSL a mantém viva por ~8 s após a última shell fechar. Entre
+#    escrever e verificar, sempre:  wsl --shutdown  (e espere).
+#
+# 3) sparseVhd e autoMemoryReclaim continuam sob [experimental], NÃO sob [wsl2].
+#    Colocados na seção errada eles falham EM SILÊNCIO — sem aviso, sem erro,
+#    simplesmente não fazem nada. (Docs revisados em 2026-06-02.)
+#
+
+[wsl2]
+
+# Teto de RAM da VM. Sem esta linha o padrão é 50% da RAM física — 16 GB nos 32 GB
+# desta máquina, o que é demais para um WSL que roda ao lado de jogo e browser.
+# 12 GB cobre Docker Engine + toolchain de Node/Go com folga e deixa 20 GB para o
+# Windows. Aumente se um build de verdade começar a bater no teto.
+memory=12GB
+
+# Número de processadores lógicos entregues à VM. O padrão é "todos". Limitar evita
+# que um `make -j` dentro do WSL engasgue o desktop inteiro.
+# (i5-14600K: 14 núcleos / 20 threads — 8 deixa margem confortável.)
+processors=8
+
+# Teto REAL do disco virtual. O VHDX cresce sob demanda e NUNCA encolhe sozinho: sem
+# este limite ele pode caminhar até 1 TB (o padrão documentado) e comer o NVMe do
+# sistema sem aviso. 256 GB é generoso para código + imagens Docker.
+# Só vale para distros criadas DEPOIS de esta linha existir.
+defaultVhdSize=256GB
+
+# NÃO habilite networkingMode=mirrored. Bugs abertos, ainda sem correção, que
+# persistem mesmo com hostAddressLoopback=true:
+#   - o Windows não alcança portas publicadas do Docker pelo IPv4 do host
+#     (microsoft/WSL #41284)
+#   - loopback WSL -> Windows leva RST por mismatch de porta efêmera
+#     (microsoft/WSL #40343)
+# O modo NAT padrão é chato, mas previsível. Aqui o default ganha.
+# networkingMode=mirrored
+
+
+[experimental]
+
+# Devolve ao disco os blocos que a distro liberou (VHDX esparso). Sem isso, apagar
+# 40 GB de node_modules não devolve 1 byte ao Windows.
+# ATENÇÃO: sparseVhd só afeta VHDs NOVOS. Este arquivo tem que existir ANTES de
+# `wsl --install -d <distro>`; ligado depois, não faz nada retroativo no disco que já
+# existe (aí a conversão é manual: `wsl --manage <distro> --set-sparse true`).
+sparseVhd=true
+
+# Devolve RAM ociosa ao Windows aos poucos, em vez de segurar o pico para sempre.
+# "gradual" é o modo conservador; existem também "dropcache" (mais agressivo, libera
+# o cache na hora) e "disabled".
+autoMemoryReclaim=gradual
