@@ -10,8 +10,7 @@
         "Type": "Microsoft.Rest"
       },
       "Packages": [
-        { "PackageIdentifier": "9NKSQGP7F2NH" },
-        { "PackageIdentifier": "9PFXXSHC64H3" }
+        { "PackageIdentifier": "9NKSQGP7F2NH" }
       ]
     }
   ]

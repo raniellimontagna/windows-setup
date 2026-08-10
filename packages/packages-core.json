@@ -16,6 +16,7 @@
         { "PackageIdentifier": "Schniz.fnm" },
         { "PackageIdentifier": "astral-sh.uv" },
         { "PackageIdentifier": "GoLang.Go" },
+        { "PackageIdentifier": "EclipseAdoptium.Temurin.21.JDK" },
         { "PackageIdentifier": "BurntSushi.ripgrep.MSVC" },
         { "PackageIdentifier": "sharkdp.fd" },
         { "PackageIdentifier": "sharkdp.bat" },
@@ -34,6 +35,7 @@
         { "PackageIdentifier": "DEVCOM.JetBrainsMonoNerdFont" },
 
         { "PackageIdentifier": "Microsoft.VisualStudioCode" },
+        { "PackageIdentifier": "Google.AndroidStudio" },
         { "PackageIdentifier": "Docker.DockerDesktop" },
         { "PackageIdentifier": "Bruno.Bruno" },
         { "PackageIdentifier": "DBeaver.DBeaver.Community" },
@@ -50,6 +52,7 @@
 
         { "PackageIdentifier": "Microsoft.PowerToys" },
         { "PackageIdentifier": "ShareX.ShareX" },
+        { "PackageIdentifier": "Skillbrains.Lightshot" },
         { "PackageIdentifier": "7zip.7zip" },
         { "PackageIdentifier": "voidtools.Everything" },
         { "PackageIdentifier": "CrystalDewWorld.CrystalDiskInfo" },
