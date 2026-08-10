@@ -23,4 +23,6 @@
 # Não persiga a 26H1: ela é ARM-only (Snapdragon X2). A 26H2 começa a chegar por volta de
 # outubro de 2026, ou seja, depois desta instalação.
 
-0000000000000000000000000000000000000000000000000000000000000000  pt-br_windows_11_25h2_x64.iso
+# Preenchido em 10/ago/2026, da tabela oficial (linha "Português (Brasil) 64-bit").
+# Nome de arquivo como a Microsoft entrega hoje; tamanho 8.172.068.864 bytes (7,61 GiB).
+50fe4703cf0df0072e093d1f5d58ed450e4c49d8ca960433bbe6278d5ef10107  Win11_25H2_BrazilianPortuguese_x64_v2.iso
