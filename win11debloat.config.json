@@ -80,6 +80,7 @@
     { "Name": "DisableAISvcAutoStart", "Value": true, "_motivo": "Impede o servico de IA de subir sozinho no boot." },
     { "Name": "DisableEdgeAI", "Value": true, "_motivo": "Features de IA dentro do Edge." },
 
+    { "Name": "ClearStart", "Value": true, "_motivo": "Zera os apps FIXADOS do Iniciar (o start2.bin do usuario). Instalacao limpa vem com uma grade de promo (Solitaire, Clipchamp, LinkedIn, apps que nem estao instalados e so abrem a Store). Nao mexe na lista 'Todos os apps' nem desinstala nada - quem desinstala e o bloco Apps." },
     { "Name": "DisableStartRecommended", "Value": true, "_motivo": "Secao 'Recomendado' do menu Iniciar." },
     { "Name": "DisableStartPhoneLink", "Value": true, "_motivo": "Integracao do Phone Link no Iniciar (o celular ja vive no ecossistema do Mac)." },
     { "Name": "DisableStoreSearchSuggestions", "Value": true, "_motivo": "Sugestoes de app da Store dentro da busca." },
