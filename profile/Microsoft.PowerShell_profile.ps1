@@ -98,6 +98,24 @@ Add-ToPath (Join-Path $HOME '.lmstudio\bin')
 if (Get-Command fnm -ErrorAction SilentlyContinue) {
   try { fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression }
   catch { warn "fnm env falhou: $($_.Exception.Message)" }
+
+  # `--use-on-cd` SÓ troca de versão ao entrar numa pasta com .node-version/.nvmrc.
+  # Num shell aberto em $HOME não existe versão ativa e `node` não resolve — mesmo
+  # com uma instalada e marcada como default.
+  #
+  # O óbvio (`fnm use default`) NÃO funciona: no fnm 1.39.0 para Windows a resolução
+  # de alias em `use` está quebrada — `default` e `lts-latest` retornam "Requested
+  # version ... is not currently installed", enquanto `fnm use v24.19.0` funciona.
+  # Verificado em 10/ago/2026; os aliases existem como junction em $FNM_DIR\aliases.
+  # Por isso resolvemos o alias na mão, pelo alvo do junction, e ativamos a versão
+  # concreta. Quando o fnm corrigir, isto vira um `fnm use default`.
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    $fnmAliasDefault = Join-Path $env:FNM_DIR 'aliases\default'
+    if (Test-Path $fnmAliasDefault) {
+      $fnmAlvo = (Get-Item $fnmAliasDefault -Force).Target
+      if ("$fnmAlvo" -match 'node-versions[\\/](v[0-9][0-9.]*)') { fnm use $Matches[1] *> $null }
+    }
+  }
 }
 # corepack/pnpm NÃO são habilitados aqui: `corepack enable` escreve em disco e é
 # tarefa de provisionamento (setup.ps1), não de abrir um shell.
