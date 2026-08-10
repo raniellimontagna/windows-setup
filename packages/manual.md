@@ -73,7 +73,8 @@ Um `winget import` único como admin **falha parcialmente**.
 | Arquivo | Shell | Observação |
 |---|---|---|
 | `packages-core.json` | **NÃO elevado** | a fonte se auto-eleva; o resto é per-user |
-| `packages-gaming.json` | **NÃO elevado** | ver a ressalva de ordem do RTSS/Afterburner na tabela |
+| `packages-gaming.json` | **NÃO elevado** | só launchers e VCRedist |
+| `packages-overlays.json` | **NÃO elevado** | **o `setup.ps1` não importa este.** Manual, e só depois de validar o EA FC — ver abaixo |
 | `packages-msstore.json` | **NÃO elevado** | source `msstore` é `Microsoft.Rest`, não a source `winget` |
 | `packages-user-scope.json` | **NÃO elevado** | `Spotify.Spotify` é `elevationProhibited` |
 
@@ -133,9 +134,27 @@ Ver seção 5.
 | `ShareX.ShareX` | Substitui o `shottr`. Win+Shift+S nativo cobre o caso simples |
 | `7zip.7zip` | Substitui o `keka`. Alternativa: `M2Team.NanaZip` (não incluída — escolha uma) |
 | `Highresolution.X-MouseButtonControl` | Só remap de botão. Aceleração/curva é RawAccel — manual, ver §1.4 |
-| `REALiX.HWiNFO` | Junto com RTSS/Afterburner ocupa o slot do `stats` do Mac. **Ver ressalva de ordem abaixo** |
+| `REALiX.HWiNFO` | Junto com RTSS/Afterburner ocupa o slot do `stats` do Mac. Vive em `packages-overlays.json` |
 | `Guru3D.RTSS` | ⚠️ **Instale e valide o EA FC ANTES disto.** A falha típica do Javelin em instalação limpa não é Secure Boot — é conflito com outro software kernel-level/overlay. (Produtos conflitantes específicos: *nao verificado*) |
 | `Guru3D.Afterburner` | ⚠️ Mesma ressalva do RTSS. Empilhar overlay antes de validar o anticheat é como se perde uma noite |
+
+### Por que os overlays têm arquivo próprio
+
+Os três acima estavam em `packages-gaming.json`, junto do `ElectronicArts.EADesktop`. O aviso
+"valide o EA FC antes" existia nesta mesma tabela — e era **inaplicável**, porque um único
+`winget import` instalava o launcher e os três overlays na mesma passada. Um aviso que a própria
+automação impede de cumprir não é aviso, é decoração.
+
+Agora `packages-overlays.json` é o único manifest que o `setup.ps1` **não** importa. Depois que o
+EA FC entrar numa partida sem reclamar:
+
+```powershell
+winget import -i .\packages\packages-overlays.json `
+  --accept-package-agreements --accept-source-agreements --disable-interactivity
+```
+
+Melhor ainda: um de cada vez, testando o jogo entre eles. É a diferença entre saber qual brigou e
+adivinhar entre três.
 
 ---
 

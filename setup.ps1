@@ -510,8 +510,6 @@ if ($SkipPackages) {
 }
 else {
   info 'Instalando pacotes (winget import)...'
-  warn 'Valide o EA FC ANTES de empilhar overlays (RTSS/Afterburner/RGB): a falha típica'
-  warn 'do anticheat em instalação limpa é conflito com software kernel-level, não Secure Boot.'
 
   # TODOS os imports rodam SEM ELEVAÇÃO, inclusive o packages-core.json. Isto já foi
   # feito errado aqui, então vale registrar o porquê:
@@ -529,6 +527,23 @@ else {
   Import-WingetFile -File (Join-Path $RepoDir 'packages\packages-gaming.json')
   Import-WingetFile -File (Join-Path $RepoDir 'packages\packages-user-scope.json')
   Import-WingetFile -File (Join-Path $RepoDir 'packages\packages-msstore.json')
+
+  # packages-overlays.json (HWiNFO, RTSS, Afterburner) fica DELIBERADAMENTE de fora.
+  # O manual.md manda validar o EA FC antes de empilhar overlay, e enquanto os três
+  # estavam no packages-gaming.json esse aviso era inaplicável: instalavam junto com o
+  # próprio EADesktop, na mesma passada. Separar é o que torna a ordem possível.
+  # A falha típica do Javelin em instalação limpa não é Secure Boot — é conflito com
+  # software kernel-level/overlay, e depurar isso com três deles já instalados é ruim.
+  Write-Host ''
+  warn 'Overlays (HWiNFO/RTSS/Afterburner) NÃO foram instalados — de propósito.'
+  Write-Host '  Abra o EA FC, entre numa partida e confirme que o anticheat passa.'
+  Write-Host '  Só depois disso, e num terminal comum:'
+  Write-Host ''
+  Write-Host "    winget import -i `"$(Join-Path $RepoDir 'packages\packages-overlays.json')`" ``"
+  Write-Host '      --accept-package-agreements --accept-source-agreements --disable-interactivity'
+  Write-Host ''
+  Write-Host '  Instale um de cada vez e teste o jogo entre eles: é assim que você'
+  Write-Host '  descobre QUAL deles brigou, em vez de perder a noite adivinhando.'
 
   Update-SessionPath
 }

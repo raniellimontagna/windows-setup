@@ -17,11 +17,7 @@
         { "PackageIdentifier": "EpicGames.EpicGamesLauncher" },
         { "PackageIdentifier": "Blizzard.BattleNet" },
         { "PackageIdentifier": "Ubisoft.Connect" },
-        { "PackageIdentifier": "GOG.Galaxy" },
-
-        { "PackageIdentifier": "REALiX.HWiNFO" },
-        { "PackageIdentifier": "Guru3D.RTSS" },
-        { "PackageIdentifier": "Guru3D.Afterburner" }
+        { "PackageIdentifier": "GOG.Galaxy" }
       ]
     }
   ]
