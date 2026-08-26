@@ -271,6 +271,9 @@ New-CliProfile -Nome 'pessoal' -Comando 'codex'  -VarAmbiente 'CODEX_HOME'      
 #   }
 
 # --- 10. Windows Terminal: sync do settings.json ------------------------------
+$ProvisionModule = Join-Path $WindowsSetupRoot 'lib\Provision-DevEnvironment.ps1'
+if (Test-Path -LiteralPath $ProvisionModule) { . $ProvisionModule }
+
 function Sync-WindowsTerminalSettings {
   <#
     .SYNOPSIS
@@ -288,37 +291,17 @@ function Sync-WindowsTerminalSettings {
   [CmdletBinding()]
   param()
 
+  if (-not (Get-Command Sync-WindowsTerminalConfig -ErrorAction SilentlyContinue)) {
+    warn "módulo de provisionamento não encontrado em $ProvisionModule"
+    return
+  }
   $origem = Join-Path $WindowsSetupRoot 'profile\windows-terminal-settings.json'
-  if (-not (Test-Path -LiteralPath $origem)) { warn "não achei $origem"; return }
-
-  # Caminhos do settings.json por tipo de instalação (não verificado no plano —
-  # confirme com `Get-AppxPackage Microsoft.WindowsTerminal` se nenhum casar).
-  $candidatos = @(
-    (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'),
-    (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json'),
-    (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\settings.json')
-  )
-  $destino = $candidatos | Where-Object { Test-Path -LiteralPath (Split-Path -Parent $_) } | Select-Object -First 1
+  $destino = Get-WindowsTerminalSettingsPath
   if (-not $destino) {
     warn "o Windows Terminal ainda não criou a pasta de settings. Abra ele uma vez e rode de novo."
     return
   }
-
-  if ((Test-Path -LiteralPath $destino) -and
-      ((Get-FileHash -LiteralPath $origem).Hash -eq (Get-FileHash -LiteralPath $destino).Hash)) {
-    ok "settings.json já está em dia"
-    return
-  }
-
-  info "Sincronizando settings.json do Windows Terminal..."
-  if (Test-Path -LiteralPath $destino) {
-    # Backup único, sobrescrito a cada sync — o objetivo é poder desfazer a ÚLTIMA
-    # cópia, não acumular histórico (isso é trabalho do git, do lado do repo).
-    Copy-Item -LiteralPath $destino -Destination "$destino.bak" -Force
-    ok "backup em $destino.bak"
-  }
-  Copy-Item -LiteralPath $origem -Destination $destino -Force
-  ok "$destino"
+  Sync-WindowsTerminalConfig -Source $origem -Destination $destino
   warn "reinicie o Windows Terminal para aplicar"
 }
 

@@ -187,6 +187,11 @@ function Invoke-Elevated {
 # --- 1. Contexto: repo, estado, sanidade ---
 
 $RepoDir = Split-Path -Parent $PSCommandPath
+$provisionModule = Join-Path $RepoDir 'lib\Provision-DevEnvironment.ps1'
+if (-not (Test-Path -LiteralPath $provisionModule)) {
+  throw "Módulo de provisionamento ausente: $provisionModule"
+}
+. $provisionModule
 # O estado mora FORA do repo (o repo é público e isto é estado de máquina) e FORA de
 # %LOCALAPPDATA%. Motivo: %LOCALAPPDATA% e %USERPROFILE% mudam quando o UAC eleva OUTRA
 # conta. Um stage 1 rodado elevado por engano gravaria o marker num perfil que a sessão
@@ -548,6 +553,10 @@ else {
   Update-SessionPath
 }
 
+# O winget instala os gerenciadores; esta etapa instala os runtimes que eles gerenciam.
+# Também roda com -SkipPackages para consertar ou atualizar uma máquina já provisionada.
+Install-DevEnvironment
+
 # --- 10. Git: identidade, defaults e aliases ---
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
   warn 'git não está no PATH — pulando as seções de Git, SSH e VS Code.'
@@ -769,6 +778,16 @@ if (Test-Path $starshipCfg) {
 }
 else {
   warn "mac-setup não clonado em $MacSetupDir — STARSHIP_CONFIG não foi apontado."
+}
+
+# Aplica o perfil visual automaticamente. O Windows PowerShell 5.1 continua disponível,
+# mas o PowerShell 7 passa a ser o padrão. A função preserva a configuração anterior.
+$terminalSource = Join-Path $RepoDir 'profile\windows-terminal-settings.json'
+$terminalDestination = Get-WindowsTerminalSettingsPath
+if ($terminalDestination) {
+  Sync-WindowsTerminalConfig -Source $terminalSource -Destination $terminalDestination
+} else {
+  warn 'Windows Terminal ainda não criou sua pasta de configuração — abra-o e rode o Stage 2 novamente.'
 }
 
 # --- 15. Extensões do VS Code ---

@@ -60,6 +60,9 @@ itens que importam.
 - **[`setup.ps1`](./setup.ps1)** — o orquestrador, análogo do `setup.sh` do `mac-setup`. Em dois
   estágios porque habilitar features do Windows exige reboot e o `winget import` não retoma sozinho.
   Marcador de estágio em `C:\ProgramData\windows-setup` (machine-wide de propósito — ver abaixo).
+  No Stage 2 ele também conclui o ambiente de desenvolvimento: Node LTS via `fnm`, Corepack/pnpm,
+  Python 3.13 via `uv`, Claude Code, Codex CLI, PSFzf e a configuração versionada do Windows Terminal
+  com PowerShell 7 + Starship. O fluxo é idempotente e pode ser reexecutado com `-SkipPackages`.
 - **[`windows-defaults.ps1`](./windows-defaults.ps1)** — análogo do `macos-defaults.sh`:
   **não é chamado pelo `setup.ps1`**, rode só se concordar com as mudanças. Traz também uma seção
   `# --- Deliberadamente NÃO feito aqui ---` listando os tweaks de "FPS boost" que este repo recusa,
