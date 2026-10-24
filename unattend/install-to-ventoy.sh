@@ -492,6 +492,12 @@ fi
 info "Escrevendo no pendrive..."
 mkdir -p "$VENTOY_MNT/ventoy/script"
 
+# Um symlink plantado no pendrive faria os backups e a escrita abaixo lerem ou sobrescreverem
+# um arquivo desta máquina.
+for f in "$DEST_XML" "$DEST_JSON"; do
+  [ -L "$f" ] && die "$f é um link simbólico no pendrive. Apague-o e rode de novo."
+done
+
 # Backup do ventoy.json antes de tocar nele. Datado, para poder rodar várias vezes sem
 # sobrescrever o backup anterior.
 if [ -f "$DEST_JSON" ] && [ "$JSON_UNCHANGED" -eq 0 ]; then
@@ -500,12 +506,17 @@ if [ -f "$DEST_JSON" ] && [ "$JSON_UNCHANGED" -eq 0 ]; then
   ok "Backup: $BACKUP"
 fi
 
-# Backup do answer file, pelo mesmo motivo do ventoy.json.
+# Backup do answer file, pelo mesmo motivo do ventoy.json. Ele tem a senha antiga em texto
+# claro, então vai para uma pasta 700 do usuário nesta máquina, nunca para o pendrive: o exFAT
+# não tem permissão de arquivo e a limpeza documentada no README só apaga o autounattend.xml.
 if [ "$XML_EXISTS" -eq 1 ] && [ "$XML_UNCHANGED" -eq 0 ]; then
-  XML_BACKUP="$DEST_XML.bak-$(date +%Y%m%d-%H%M%S)"
-  cp "$DEST_XML" "$XML_BACKUP"
+  XML_BACKUP_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/windows-setup/ventoy-backup"
+  mkdir -p -m 700 "$XML_BACKUP_DIR"
+  chmod 700 "$XML_BACKUP_DIR"
+  XML_BACKUP="$XML_BACKUP_DIR/autounattend.xml.bak-$(date +%Y%m%d-%H%M%S)"
+  ( umask 077; cat "$DEST_XML" > "$XML_BACKUP" )
   ok "Backup: $XML_BACKUP"
-  warn "Esse backup contém a senha antiga em texto claro. Apague o pendrive quando não precisar mais."
+  warn "Esse backup contém a senha antiga em texto claro. Apague-o quando não precisar mais."
 fi
 
 # Escrita por redirecionamento, não por `cp`: no macOS o `cp` pode carregar extended

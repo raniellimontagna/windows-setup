@@ -388,4 +388,10 @@ Nada aqui é responsabilidade do `unattend/`, mas vale anotar o gancho:
 
   ```bash
   rm /Volumes/Ventoy/ventoy/script/autounattend.xml
+  # cópias antigas deixadas por versões anteriores do install-to-ventoy.sh, se houver:
+  rm -f /Volumes/Ventoy/ventoy/script/autounattend.xml.bak-*
   ```
+
+  Se o `install-to-ventoy.sh` substituiu um answer file que já estava no pendrive, o backup
+  dele (com a senha antiga) fica nesta máquina, em
+  `~/.local/state/windows-setup/ventoy-backup/`, numa pasta 700. Apague quando não precisar mais.
