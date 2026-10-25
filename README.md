@@ -153,8 +153,9 @@ Ubuntu e reusa a metade que é Linux-safe. **Não existe um terceiro repo de dot
   arquivo.
 - **A senha vaza no `C:\Windows\Panther\`** durante a instalação, em texto claro. O answer file
   manda apagar as cópias, mas troque a senha depois do primeiro boot mesmo assim.
-- **Não use `irm <url> | iex` com este repo.** Fixe uma tag ou SHA revisado
-  (`bootstrap.ps1 -Ref <sha>`). Em março de 2026 a Compass Security publicou initial access via
+- **Não use `irm <url> | iex` com este repo.** Fixe o SHA completo revisado
+  (`bootstrap.ps1 -Ref <sha de 40 caracteres>`). SHA abreviado é recusado, e uma tag só vale como
+  pin com `-ExpectedCommit <sha>`, porque quem tem push pode mover a tag. Em março de 2026 a Compass Security publicou initial access via
   WinGet Desired State em que o Mark-of-the-Web não era aplicado — vale a paranoia.
 - **O pendrive vira segredo físico** enquanto tiver o `autounattend.xml` gerado.
 

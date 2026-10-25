@@ -6,7 +6,8 @@
 #
 # Uso (num terminal COMUM, NÃO elevado — ver bloco ELEVAÇÃO abaixo):
 #       powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
-#       powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Ref v1.0.0
+#       powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Ref <sha de 40 caracteres>
+#       powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -Ref v1.0.0 -ExpectedCommit <sha>
 #       powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1 -SkipSetup
 #
 # Seguro rodar várias vezes (idempotente): cada etapa verifica o estado antes
@@ -66,8 +67,11 @@
 #   3. A própria Microsoft recomenda revisar qualquer configuration file antes
 #      de executar.
 # O caminho certo: copie o arquivo do pendrive (ou baixe e LEIA), rode local,
-# e passe `-Ref` com a TAG ou o SHA que você revisou. O default `main` existe
-# só para conveniência de desenvolvimento e emite aviso.
+# e passe `-Ref` com o SHA COMPLETO (40 caracteres) que você revisou. O default
+# `main` existe só para conveniência de desenvolvimento e emite aviso.
+# Tag e SHA abreviado NÃO são pin: quem tem push move a tag, ou cria uma tag
+# cujo nome é o seu SHA curto. Por isso SHA abreviado é recusado, e uma tag só
+# vale como pin junto com `-ExpectedCommit <sha completo>`.
 #
 # Nenhum segredo mora neste arquivo. Senha da conta local, tokens e chaves
 # ficam FORA do repo (o repo é público) e são injetados em tempo de execução.
@@ -84,8 +88,13 @@ param(
   # fazer, em vez de morrer com um erro de credencial sem contexto.
   [string] $RepoUrl = 'https://github.com/raniellimontagna/windows-setup.git',
 
-  # Tag ou SHA revisado. Ver bloco SEGURANÇA acima.
+  # SHA completo revisado (ou tag + -ExpectedCommit). Ver bloco SEGURANÇA acima.
   [string] $Ref = 'main',
+
+  # Commit que o checkout de -Ref TEM de produzir. Obrigatório para tratar uma
+  # tag como pin; com -Ref <sha completo> ele é redundante.
+  [ValidatePattern('^[0-9a-fA-F]{40}$')]
+  [string] $ExpectedCommit,
 
   [string] $TargetDir = (Join-Path $env:USERPROFILE 'Projetos\pessoal\windows-setup'),
 
@@ -386,8 +395,12 @@ if ($ManualCopy) {
   info "Usando a cópia local em $TargetDir"
   warn "$TargetDir tem um setup.ps1 mas NÃO é um repositório git (cópia manual do pendrive?). Pulando clone e checkout — nada é sobrescrito, e atualizações terão que ser copiadas na mão."
 } else {
+  $RefIsFullSha = $Ref -match '^[0-9a-fA-F]{40}$'
+  if (-not $RefIsFullSha -and $Ref -match '^[0-9a-fA-F]{4,39}$') {
+    die "-Ref '$Ref' parece um SHA abreviado. Uma tag com esse nome teria prioridade sobre o commit, então passe o SHA completo (40 caracteres): git rev-parse $Ref"
+  }
   if ($Ref -eq 'main') {
-    warn "Você está clonando o branch 'main'. Numa máquina recém-instalada prefira uma tag revisada: -Ref v1.0.0 (ver bloco SEGURANÇA no topo)."
+    warn "Você está clonando o branch 'main'. Numa máquina recém-instalada prefira o SHA completo revisado: -Ref <sha> (ver bloco SEGURANÇA no topo)."
   }
 
   info "Clonando o repositório em $TargetDir..."
@@ -463,6 +476,16 @@ if ($ManualCopy) {
 
   Invoke-Exe -File 'git' -Arguments @('-C', $TargetDir, 'checkout', $Ref)
   if ($LASTEXITCODE -ne 0) { die "git checkout '$Ref' falhou. Confira se a tag/SHA existe no remoto." }
+
+  # O pin é o commit, não o nome: confere o que o checkout realmente trouxe.
+  $Head = "$(Invoke-Exe -File 'git' -Arguments @('-C', $TargetDir, 'rev-parse', 'HEAD'))".Trim().ToLowerInvariant()
+  $Wanted = if ($ExpectedCommit) { $ExpectedCommit.ToLowerInvariant() } elseif ($RefIsFullSha) { $Ref.ToLowerInvariant() } else { $null }
+  if ($Wanted -and $Head -ne $Wanted) {
+    die "O checkout de '$Ref' trouxe o commit $Head, não o $Wanted revisado. A tag pode ter sido movida — não rode este código."
+  }
+  if (-not $Wanted -and $Ref -ne 'main') {
+    warn "'$Ref' resolveu para o commit $Head, mas uma tag pode ser movida por quem tem push. Para pinar de verdade use -Ref <sha completo> ou -ExpectedCommit <sha>."
+  }
 
   # Se $Ref for um branch, alinha com o remoto. Se for tag ou SHA, o checkout
   # deixou o HEAD detached e o pull falha — o que é o comportamento desejado num
