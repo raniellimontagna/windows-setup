@@ -77,7 +77,7 @@ Cartão condensado para seguir na hora. O detalhe e o "porquê" de cada item est
 ```
 
 - [ ] `bootstrap.ps1` → instala winget, PowerShell 7, git, clona o repo
-      ⚠️ **O repo precisa estar publicado no GitHub**, senão passe `-RepoUrl` ou copie à mão.
+      Sem acesso ao GitHub, passe `-RepoUrl` ou copie o repo à mão.
 - [ ] `setup.ps1 -Stage 1` → reboot → `setup.ps1 -Stage 2`
 - [ ] **Instale e valide o EA FC ANTES dos overlays.** Entre numa partida.
 - [ ] Só então: `winget import -i .\packages\packages-overlays.json --accept-package-agreements

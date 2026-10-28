@@ -191,17 +191,16 @@ Ubuntu e reusa a metade que é Linux-safe. **Não existe um terceiro repo de dot
 
 ## Estado
 
-Escrito e revisado, **nunca executado numa máquina real** — a máquina alvo ainda não foi formatada.
-Trate a primeira execução como teste, não como rotina. Duas coisas ajudam:
+A máquina alvo roda **Windows 11 com WSL2 (Ubuntu) desde 24/out/2026**, como PC de jogo e segunda
+máquina de dev. O repo é público, então o `bootstrap.ps1` clona sem precisar de `-RepoUrl`.
 
-1. O `bootstrap.ps1` clona de uma URL que **só resolve depois que este repo for publicado**. Publique
-   antes de apagar o CachyOS, ou passe `-RepoUrl`/copie o repo à mão.
-2. O `unattend/iso.sha256` **já está preenchido** (10/ago/2026) com o hash oficial de
-   Português (Brasil), e o ISO no pendrive foi conferido contra ele. Os scripts validam o ISO
-   antes de escrever qualquer coisa.
+Antes de usar de novo numa reinstalação:
 
-Teste o `autounattend.xml` numa VM antes do wipe. XML malformado dá loop de reboot, e descobrir isso
-sem sistema operacional e sem backup é o pior cenário possível.
+1. O `unattend/iso.sha256` guarda o hash oficial do ISO em Português (Brasil) de 10/ago/2026. Os
+   scripts validam o ISO contra ele antes de escrever qualquer coisa, então um ISO mais novo pede
+   hash novo: baixe, confira na página da Microsoft e atualize o arquivo.
+2. Teste o `autounattend.xml` numa VM antes de formatar. XML malformado dá loop de reboot, e
+   descobrir isso sem sistema operacional e sem backup é o pior cenário possível.
 
 ---
 
