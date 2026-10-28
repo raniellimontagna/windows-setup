@@ -24,6 +24,9 @@ de dados. Depois que o instalador roda, refazer significa reinstalar. Comece por
 
 ## Ordem de execução
 
+Para o dia da instalação, siga o cartão condensado [`DIA-D.md`](./DIA-D.md): a mesma ordem abaixo
+em forma de checklist, com os pontos irreversíveis marcados.
+
 | # | Onde | O quê |
 |---|---|---|
 | 0 | Máquina antiga, ainda bootável | [`unattend/README.md`](./unattend/README.md) — Fases 0 a 6: resgate de dados, mídia USB, BIOS, instalação |
@@ -53,6 +56,9 @@ itens que importam.
 
 ### Raiz
 
+- **[`DIA-D.md`](./DIA-D.md)** — roteiro de instalação para seguir na hora: backup, BIOS, instalação,
+  primeiro boot, verificação, provisionamento e o que fazer se der errado. O porquê de cada item
+  fica no [`unattend/README.md`](./unattend/README.md).
 - **[`bootstrap.ps1`](./bootstrap.ps1)** — o primeiro comando numa máquina limpa. Compatível com
   **PowerShell 5.1** por obrigação: um Windows novo não tem outra coisa. Resolve a execution policy,
   conserta o winget (ele registra de forma assíncrona depois do primeiro login e não está usável de
@@ -77,8 +83,18 @@ itens que importam.
 
 ### `packages/`
 
-Manifests do `winget import`, o análogo do `Brewfile`. Quatro arquivos, não um, porque a elevação do
-winget é inconsistente. **Todos rodam não elevados** — ver [`packages/manual.md`](./packages/manual.md)
+Manifests do `winget import`, o análogo do `Brewfile`. Cinco arquivos, não um:
+
+| Arquivo | Conteúdo |
+|---|---|
+| [`packages-core.json`](./packages/packages-core.json) | CLIs, runtimes e apps de desenvolvimento e de uso geral |
+| [`packages-gaming.json`](./packages/packages-gaming.json) | VC++ Redistributable e launchers (Steam, EA app, Ubisoft Connect) |
+| [`packages-user-scope.json`](./packages/packages-user-scope.json) | Spotify, que falha em shell elevado |
+| [`packages-msstore.json`](./packages/packages-msstore.json) | App da Microsoft Store (WhatsApp) |
+| [`packages-overlays.json`](./packages/packages-overlays.json) | HWiNFO, RTSS, Afterburner e OBS — **não** importado pelo `setup.ps1` |
+
+Os overlays ficam de fora de propósito: instale depois de confirmar que o anticheat do EA FC passa,
+um de cada vez. **Todos rodam não elevados** — ver [`packages/manual.md`](./packages/manual.md)
 para o porquê, para os 3 itens que o winget não instala (driver NVIDIA, `rtk`, `grok-build`), e para
 os comandos de manutenção.
 
@@ -103,6 +119,19 @@ plano B se o Ventoy não bootar nesta placa.
 
 O `autounattend.xml` final é *gerado* e está no `.gitignore` — o que se versiona é o template com
 placeholder.
+
+### `lib/` e `tests/`
+
+[`lib/Provision-DevEnvironment.ps1`](./lib/Provision-DevEnvironment.ps1) é a parte do Stage 2 que
+provisiona o ambiente de desenvolvimento (Node LTS via `fnm`, Corepack/pnpm, Claude Code e Codex CLI,
+Python 3.13 via `uv`, PSFzf e a configuração do Windows Terminal); o `setup.ps1` carrega esse arquivo
+por dot-source. [`tests/Provision-DevEnvironment.Tests.ps1`](./tests/Provision-DevEnvironment.Tests.ps1)
+testa esse provisionamento e a checagem da configuração do Windows Terminal com comandos simulados
+(`fnm`, `npm`, `uv`, `fzf`...), sem instalar nada:
+
+```powershell
+pwsh -File tests/Provision-DevEnvironment.Tests.ps1
+```
 
 ### `profile/`, `wsl/`, `vscode/`
 
@@ -148,16 +177,15 @@ Ubuntu e reusa a metade que é Linux-safe. **Não existe um terceiro repo de dot
   `install-to-ventoy.sh` (e o `build-usb.sh`) injetam a senha de um arquivo fora do repo e
   **recusam** um arquivo de senha que esteja dentro dele. O XML gerado está no `.gitignore` e
   nunca chega a ser escrito dentro do repo.
-- **O pendrive vira segredo físico** depois de rodar o script: o answer file fica em
-  `/ventoy/script/autounattend.xml` com a senha em texto claro, e exFAT não tem permissão de
-  arquivo.
+- **O pendrive vira segredo físico** depois de rodar o script, enquanto tiver o
+  `autounattend.xml` gerado: o answer file fica em `/ventoy/script/autounattend.xml` com a senha
+  em texto claro, e exFAT não tem permissão de arquivo.
 - **A senha vaza no `C:\Windows\Panther\`** durante a instalação, em texto claro. O answer file
   manda apagar as cópias, mas troque a senha depois do primeiro boot mesmo assim.
 - **Não use `irm <url> | iex` com este repo.** Fixe o SHA completo revisado
   (`bootstrap.ps1 -Ref <sha de 40 caracteres>`). SHA abreviado é recusado, e uma tag só vale como
   pin com `-ExpectedCommit <sha>`, porque quem tem push pode mover a tag. Em março de 2026 a Compass Security publicou initial access via
   WinGet Desired State em que o Mark-of-the-Web não era aplicado — vale a paranoia.
-- **O pendrive vira segredo físico** enquanto tiver o `autounattend.xml` gerado.
 
 ---
 
@@ -174,3 +202,9 @@ Trate a primeira execução como teste, não como rotina. Duas coisas ajudam:
 
 Teste o `autounattend.xml` numa VM antes do wipe. XML malformado dá loop de reboot, e descobrir isso
 sem sistema operacional e sem backup é o pior cenário possível.
+
+---
+
+## Licença
+
+Distribuído sob a [Licença MIT](LICENSE).
